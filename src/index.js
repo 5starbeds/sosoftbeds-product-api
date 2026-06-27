@@ -6,6 +6,10 @@ const STORE_ORIGIN = 'https://www.sosoftbeds.co.uk';
 const CANONICAL_API_ORIGIN = 'https://api.sosoftbeds.co.uk';
 const BRAND_NAME = 'Sosoft Beds';
 const SOURCE_REPOSITORY_URL = 'https://github.com/5starbeds/sosoftbeds-product-api';
+const API_VERSION = '1.0';
+const PRODUCTS_DATA_UPDATED = getLatestCacheDate(CACHED_PRODUCTS);
+const CONTENT_DATA_UPDATED = getLatestCacheDate(CACHED_CONTENT_PAGES);
+const DATA_UPDATED = [PRODUCTS_DATA_UPDATED, CONTENT_DATA_UPDATED].sort().reverse()[0];
 
 const OPTION_VALUE_KEYS = [
   'dropdown_value',
@@ -132,17 +136,43 @@ export default {
 
     if (pathname === '/') {
       return jsonResponse({
+        status: 200,
+        name: 'Sosoft Beds Product API',
         message: 'Sosoft Beds Product API',
         description: 'Machine-readable ecommerce product catalogue.',
         website: STORE_ORIGIN,
+        canonical: CANONICAL_API_ORIGIN,
         canonical_api: CANONICAL_API_ORIGIN,
+        api_version: API_VERSION,
+        data_updated: DATA_UPDATED,
+        data: {
+          source: 'Magento',
+          last_updated: DATA_UPDATED,
+          products_last_updated: PRODUCTS_DATA_UPDATED,
+          content_last_updated: CONTENT_DATA_UPDATED,
+          cache_type: 'embedded',
+        },
+        capabilities: [
+          'product discovery',
+          'natural language search',
+          'product comparison',
+          'pricing lookup',
+          'category browsing',
+          'content retrieval',
+        ],
         source: SOURCE_REPOSITORY_URL,
         api_base: `${origin}/api/`,
         resources: {
           llm_guide: `${origin}/llms.txt`,
           openapi: `${origin}/openapi.json`,
+          docs: `${origin}/docs`,
           documentation: `${origin}/docs`,
           products: `${origin}/api/products`,
+          search: `${origin}/api/search?q=`,
+          categories: `${origin}/api/categories`,
+          content: `${origin}/api/content-pages`,
+          sitemap: `${origin}/products-sitemap.xml`,
+          robots: `${origin}/robots.txt`,
         },
         discovery: {
           llms_txt: `${origin}/llms.txt`,
@@ -168,6 +198,15 @@ export default {
     return jsonResponse({ error: 'Not found' }, 404);
   },
 };
+
+function getLatestCacheDate(items) {
+  const timestamps = items
+    .map(item => item?.cache_generated_at)
+    .filter(Boolean)
+    .sort()
+    .reverse();
+  return timestamps[0]?.slice(0, 10) || '2026-06-27';
+}
 
 function logCrawlerDiscoveryHit(request, url) {
   const userAgent = request.headers.get('user-agent') || '';

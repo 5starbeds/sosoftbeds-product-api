@@ -14,23 +14,53 @@ describe("Sosoft Beds Product API", () => {
 	it("returns API discovery details from the homepage", async () => {
 		const response = await fetchWorker("/");
 		const body = await response.json() as {
+			status: number;
+			name: string;
 			message: string;
 			description: string;
+			canonical: string;
 			canonical_api: string;
+			api_version: string;
+			data_updated: string;
+			data: {
+				source: string;
+				last_updated: string;
+				products_last_updated: string;
+				content_last_updated: string;
+				cache_type: string;
+			};
+			capabilities: string[];
 			source: string;
 			resources: Record<string, string>;
 			discovery: Record<string, string>;
 		};
 
 		expect(response.status).toBe(200);
+		expect(body.status).toBe(200);
+		expect(body.name).toBe("Sosoft Beds Product API");
 		expect(body.message).toBe("Sosoft Beds Product API");
 		expect(body.description).toBe("Machine-readable ecommerce product catalogue.");
+		expect(body.canonical).toBe("https://api.sosoftbeds.co.uk");
 		expect(body.canonical_api).toBe("https://api.sosoftbeds.co.uk");
+		expect(body.api_version).toBe("1.0");
+		expect(body.data_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(body.data.source).toBe("Magento");
+		expect(body.data.last_updated).toBe(body.data_updated);
+		expect(body.data.products_last_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(body.data.content_last_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(body.data.cache_type).toBe("embedded");
+		expect(body.capabilities).toContain("natural language search");
+		expect(body.capabilities).toContain("pricing lookup");
 		expect(body.source).toBe("https://github.com/5starbeds/sosoftbeds-product-api");
 		expect(body.resources.llm_guide).toBe("https://api.sosoftbeds.co.uk/llms.txt");
 		expect(body.resources.openapi).toBe("https://api.sosoftbeds.co.uk/openapi.json");
+		expect(body.resources.docs).toBe("https://api.sosoftbeds.co.uk/docs");
 		expect(body.resources.documentation).toBe("https://api.sosoftbeds.co.uk/docs");
 		expect(body.resources.products).toBe("https://api.sosoftbeds.co.uk/api/products");
+		expect(body.resources.search).toBe("https://api.sosoftbeds.co.uk/api/search?q=");
+		expect(body.resources.categories).toBe("https://api.sosoftbeds.co.uk/api/categories");
+		expect(body.resources.content).toBe("https://api.sosoftbeds.co.uk/api/content-pages");
+		expect(body.resources.sitemap).toBe("https://api.sosoftbeds.co.uk/products-sitemap.xml");
 		expect(body.discovery.openapi).toBe("https://api.sosoftbeds.co.uk/openapi.json");
 		expect(body.discovery.docs).toBe("https://api.sosoftbeds.co.uk/docs");
 	});
