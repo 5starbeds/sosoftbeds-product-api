@@ -7,6 +7,8 @@ const CANONICAL_API_ORIGIN = 'https://api.sosoftbeds.co.uk';
 const BRAND_NAME = 'Sosoft Beds';
 const SOURCE_REPOSITORY_URL = 'https://github.com/5starbeds/sosoftbeds-product-api';
 const API_VERSION = '1.0';
+const GOOGLE_SITE_VERIFICATION_FILENAME = 'googleba3eea9f8143c3f9.html';
+const GOOGLE_SITE_VERIFICATION_CONTENT = `google-site-verification: ${GOOGLE_SITE_VERIFICATION_FILENAME}`;
 const PRODUCTS_DATA_UPDATED = getLatestCacheDate(CACHED_PRODUCTS);
 const CONTENT_DATA_UPDATED = getLatestCacheDate(CACHED_CONTENT_PAGES);
 const DATA_UPDATED = [PRODUCTS_DATA_UPDATED, CONTENT_DATA_UPDATED].sort().reverse()[0];
@@ -67,6 +69,10 @@ export default {
     const origin = CANONICAL_API_ORIGIN;
 
     logCrawlerDiscoveryHit(request, url);
+
+    if (pathname === `/${GOOGLE_SITE_VERIFICATION_FILENAME}`) {
+      return textResponse(GOOGLE_SITE_VERIFICATION_CONTENT, 'text/html; charset=utf-8');
+    }
 
     if (pathname === '/robots.txt') {
       return textResponse(formatRobotsTxt(origin), 'text/plain; charset=utf-8');

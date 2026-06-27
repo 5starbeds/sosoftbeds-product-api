@@ -136,6 +136,15 @@ describe("Sosoft Beds Product API", () => {
 		expect(body).not.toHaveProperty("discovery");
 	});
 
+	it("serves the Google Search Console verification file", async () => {
+		const response = await fetchWorker("/googleba3eea9f8143c3f9.html");
+		const body = await response.text();
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-type")).toContain("text/html");
+		expect(body).toBe("google-site-verification: googleba3eea9f8143c3f9.html");
+	});
+
 	it("serves a valid AI plugin manifest", async () => {
 		const response = await fetchWorker("/.well-known/ai-plugin.json");
 		const body = await response.json() as {
