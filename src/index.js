@@ -146,7 +146,6 @@ export default {
           website: STORE_ORIGIN,
         },
         canonical: CANONICAL_API_ORIGIN,
-        canonical_api: CANONICAL_API_ORIGIN,
         api_version: API_VERSION,
         data_updated: DATA_UPDATED,
         data: {
@@ -170,6 +169,15 @@ export default {
           'Markdown',
           'XML sitemap',
         ],
+        examples: {
+          product_search: `${origin}/api/search?q=king+size+ottoman+bed`,
+          product_lookup: `${origin}/api/products/Giovani-Bed`,
+        },
+        rate_limit: {
+          authentication: 'none',
+          policy: 'reasonable automated usage',
+        },
+        catalogue_stats: getCatalogueStats(origin),
         source: SOURCE_REPOSITORY_URL,
         api_base: `${origin}/api/`,
         resources: {
@@ -901,6 +909,15 @@ function getCategoryIndex(origin) {
     message: 'Categories index',
     total: categories.length,
     categories,
+  };
+}
+
+function getCatalogueStats(origin) {
+  return {
+    products: CACHED_PRODUCTS.length,
+    categories: getCategoryIndex(origin).total,
+    content_pages: CACHED_CONTENT_PAGES.length,
+    last_sync: DATA_UPDATED,
   };
 }
 

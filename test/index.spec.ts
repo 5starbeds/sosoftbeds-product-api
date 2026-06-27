@@ -23,7 +23,6 @@ describe("Sosoft Beds Product API", () => {
 				website: string;
 			};
 			canonical: string;
-			canonical_api: string;
 			api_version: string;
 			data_updated: string;
 			data: {
@@ -35,6 +34,20 @@ describe("Sosoft Beds Product API", () => {
 			};
 			capabilities: string[];
 			formats: string[];
+			examples: {
+				product_search: string;
+				product_lookup: string;
+			};
+			rate_limit: {
+				authentication: string;
+				policy: string;
+			};
+			catalogue_stats: {
+				products: number;
+				categories: number;
+				content_pages: number;
+				last_sync: string;
+			};
 			source: string;
 			resources: {
 				llm_guide: string;
@@ -62,7 +75,7 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.publisher.name).toBe("Sosoft Beds");
 		expect(body.publisher.website).toBe("https://www.sosoftbeds.co.uk");
 		expect(body.canonical).toBe("https://api.sosoftbeds.co.uk");
-		expect(body.canonical_api).toBe("https://api.sosoftbeds.co.uk");
+		expect(body).not.toHaveProperty("canonical_api");
 		expect(body.api_version).toBe("1.0");
 		expect(body.data_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(body.data.source).toBe("Magento");
@@ -75,6 +88,14 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.formats).toContain("application/json");
 		expect(body.formats).toContain("OpenAPI 3.1");
 		expect(body.formats).toContain("Markdown");
+		expect(body.examples.product_search).toBe("https://api.sosoftbeds.co.uk/api/search?q=king+size+ottoman+bed");
+		expect(body.examples.product_lookup).toBe("https://api.sosoftbeds.co.uk/api/products/Giovani-Bed");
+		expect(body.rate_limit.authentication).toBe("none");
+		expect(body.rate_limit.policy).toBe("reasonable automated usage");
+		expect(body.catalogue_stats.products).toBeGreaterThan(200);
+		expect(body.catalogue_stats.categories).toBeGreaterThan(40);
+		expect(body.catalogue_stats.content_pages).toBeGreaterThan(20);
+		expect(body.catalogue_stats.last_sync).toBe(body.data_updated);
 		expect(body.source).toBe("https://github.com/5starbeds/sosoftbeds-product-api");
 		expect(body.resources.llm_guide).toBe("https://api.sosoftbeds.co.uk/llms.txt");
 		expect(body.resources.openapi).toBe("https://api.sosoftbeds.co.uk/openapi.json");
@@ -87,6 +108,23 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.resources.discovery.search).toBe("https://api.sosoftbeds.co.uk/api/search?q=");
 		expect(body.discovery.openapi).toBe("https://api.sosoftbeds.co.uk/openapi.json");
 		expect(body.discovery.docs).toBe("https://api.sosoftbeds.co.uk/docs");
+	});
+
+	it("serves a valid AI plugin manifest", async () => {
+		const response = await fetchWorker("/.well-known/ai-plugin.json");
+		const body = await response.json() as {
+			schema_version: string;
+			name_for_model: string;
+			auth: { type: string };
+			api: { type: string; url: string };
+		};
+
+		expect(response.status).toBe(200);
+		expect(body.schema_version).toBe("v1");
+		expect(body.name_for_model).toBe("sosoft_beds_products");
+		expect(body.auth.type).toBe("none");
+		expect(body.api.type).toBe("openapi");
+		expect(body.api.url).toBe("https://api.sosoftbeds.co.uk/openapi.json");
 	});
 
 	it("returns paginated product summaries", async () => {
