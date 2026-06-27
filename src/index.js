@@ -155,6 +155,10 @@ export default {
           content_last_updated: CONTENT_DATA_UPDATED,
           cache_type: 'embedded',
         },
+        sync: {
+          method: 'scheduled',
+          frequency: 'daily',
+        },
         capabilities: [
           'product discovery',
           'natural language search',
@@ -162,6 +166,13 @@ export default {
           'pricing lookup',
           'category browsing',
           'content retrieval',
+        ],
+        entities: [
+          'Product',
+          'Category',
+          'ContentPage',
+          'Price',
+          'Variant',
         ],
         formats: [
           'application/json',
@@ -174,7 +185,6 @@ export default {
           product_lookup: `${origin}/api/products/Giovani-Bed`,
         },
         rate_limit: {
-          authentication: 'none',
           policy: 'reasonable automated usage',
         },
         catalogue_stats: getCatalogueStats(origin),
@@ -183,25 +193,13 @@ export default {
         resources: {
           llm_guide: `${origin}/llms.txt`,
           openapi: `${origin}/openapi.json`,
-          documentation: `${origin}/docs`,
-          sitemap: `${origin}/products-sitemap.xml`,
-          robots: `${origin}/robots.txt`,
-          catalogue: {
-            products: `${origin}/api/products`,
-            categories: `${origin}/api/categories`,
-            content: `${origin}/api/content-pages`,
-          },
-          discovery: {
-            search: `${origin}/api/search?q=`,
-          },
-        },
-        discovery: {
-          llms_txt: `${origin}/llms.txt`,
-          openapi: `${origin}/openapi.json`,
-          sitemap: `${origin}/products-sitemap.xml`,
-          robots: `${origin}/robots.txt`,
           docs: `${origin}/docs`,
-          ai_plugin: `${origin}/.well-known/ai-plugin.json`,
+          sitemap: `${origin}/products-sitemap.xml`,
+          robots: `${origin}/robots.txt`,
+          products: `${origin}/api/products`,
+          categories: `${origin}/api/categories`,
+          content: `${origin}/api/content-pages`,
+          search: `${origin}/api/search?q=`,
         },
         endpoints: [
           `${origin}/api/products`,
@@ -212,7 +210,10 @@ export default {
           `${origin}/api/content-pages/{slug}`,
           `${origin}/docs`,
         ],
-        authentication: 'none',
+        authentication: {
+          required: false,
+          type: 'public',
+        },
       });
     }
 

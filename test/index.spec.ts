@@ -32,14 +32,18 @@ describe("Sosoft Beds Product API", () => {
 				content_last_updated: string;
 				cache_type: string;
 			};
+			sync: {
+				method: string;
+				frequency: string;
+			};
 			capabilities: string[];
+			entities: string[];
 			formats: string[];
 			examples: {
 				product_search: string;
 				product_lookup: string;
 			};
 			rate_limit: {
-				authentication: string;
 				policy: string;
 			};
 			catalogue_stats: {
@@ -48,23 +52,22 @@ describe("Sosoft Beds Product API", () => {
 				content_pages: number;
 				last_sync: string;
 			};
+			authentication: {
+				required: boolean;
+				type: string;
+			};
 			source: string;
 			resources: {
 				llm_guide: string;
 				openapi: string;
-				documentation: string;
+				docs: string;
 				sitemap: string;
 				robots: string;
-				catalogue: {
-					products: string;
-					categories: string;
-					content: string;
-				};
-				discovery: {
-					search: string;
-				};
+				products: string;
+				categories: string;
+				content: string;
+				search: string;
 			};
-			discovery: Record<string, string>;
 		};
 
 		expect(response.status).toBe(200);
@@ -83,15 +86,19 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.data.products_last_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(body.data.content_last_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(body.data.cache_type).toBe("embedded");
+		expect(body.sync.method).toBe("scheduled");
+		expect(body.sync.frequency).toBe("daily");
 		expect(body.capabilities).toContain("natural language search");
 		expect(body.capabilities).toContain("pricing lookup");
+		expect(body.entities).toEqual(["Product", "Category", "ContentPage", "Price", "Variant"]);
 		expect(body.formats).toContain("application/json");
 		expect(body.formats).toContain("OpenAPI 3.1");
 		expect(body.formats).toContain("Markdown");
 		expect(body.examples.product_search).toBe("https://api.sosoftbeds.co.uk/api/search?q=king+size+ottoman+bed");
 		expect(body.examples.product_lookup).toBe("https://api.sosoftbeds.co.uk/api/products/Giovani-Bed");
-		expect(body.rate_limit.authentication).toBe("none");
 		expect(body.rate_limit.policy).toBe("reasonable automated usage");
+		expect(body.authentication.required).toBe(false);
+		expect(body.authentication.type).toBe("public");
 		expect(body.catalogue_stats.products).toBeGreaterThan(200);
 		expect(body.catalogue_stats.categories).toBeGreaterThan(40);
 		expect(body.catalogue_stats.content_pages).toBeGreaterThan(20);
@@ -99,15 +106,16 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.source).toBe("https://github.com/5starbeds/sosoftbeds-product-api");
 		expect(body.resources.llm_guide).toBe("https://api.sosoftbeds.co.uk/llms.txt");
 		expect(body.resources.openapi).toBe("https://api.sosoftbeds.co.uk/openapi.json");
-		expect(body.resources.documentation).toBe("https://api.sosoftbeds.co.uk/docs");
+		expect(body.resources.docs).toBe("https://api.sosoftbeds.co.uk/docs");
 		expect(body.resources.sitemap).toBe("https://api.sosoftbeds.co.uk/products-sitemap.xml");
 		expect(body.resources.robots).toBe("https://api.sosoftbeds.co.uk/robots.txt");
-		expect(body.resources.catalogue.products).toBe("https://api.sosoftbeds.co.uk/api/products");
-		expect(body.resources.catalogue.categories).toBe("https://api.sosoftbeds.co.uk/api/categories");
-		expect(body.resources.catalogue.content).toBe("https://api.sosoftbeds.co.uk/api/content-pages");
-		expect(body.resources.discovery.search).toBe("https://api.sosoftbeds.co.uk/api/search?q=");
-		expect(body.discovery.openapi).toBe("https://api.sosoftbeds.co.uk/openapi.json");
-		expect(body.discovery.docs).toBe("https://api.sosoftbeds.co.uk/docs");
+		expect(body.resources.products).toBe("https://api.sosoftbeds.co.uk/api/products");
+		expect(body.resources.categories).toBe("https://api.sosoftbeds.co.uk/api/categories");
+		expect(body.resources.content).toBe("https://api.sosoftbeds.co.uk/api/content-pages");
+		expect(body.resources.search).toBe("https://api.sosoftbeds.co.uk/api/search?q=");
+		expect(body.resources).not.toHaveProperty("catalogue");
+		expect(body.resources).not.toHaveProperty("discovery");
+		expect(body).not.toHaveProperty("discovery");
 	});
 
 	it("serves a valid AI plugin manifest", async () => {
