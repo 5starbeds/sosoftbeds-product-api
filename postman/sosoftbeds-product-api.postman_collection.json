@@ -1,0 +1,156 @@
+{
+  "info": {
+    "name": "Sosoft Beds Product API",
+    "description": "Machine-readable product catalogue API designed for search engines, AI assistants, and ecommerce integrations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://products-api.sosoftbeds.workers.dev",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Discovery",
+      "item": [
+        {
+          "name": "API Homepage",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/"
+          }
+        },
+        {
+          "name": "Docs",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "text/html" }
+            ],
+            "url": "{{baseUrl}}/docs"
+          }
+        },
+        {
+          "name": "OpenAPI Spec",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/openapi.json"
+          }
+        },
+        {
+          "name": "LLM Guide",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "text/markdown" }
+            ],
+            "url": "{{baseUrl}}/llms.txt"
+          }
+        },
+        {
+          "name": "Product Sitemap",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/xml" }
+            ],
+            "url": "{{baseUrl}}/products-sitemap.xml"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Product List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/products?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Product Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/products/60cm-ottoman-bed"
+          }
+        },
+        {
+          "name": "Configured Price",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/products/60cm-ottoman-bed/price?values=134102"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search And Categories",
+      "item": [
+        {
+          "name": "Natural Language Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/search?q=king%20size%20ottoman%20beds%20under%20500"
+          }
+        },
+        {
+          "name": "Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/categories"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Content Pages",
+      "item": [
+        {
+          "name": "Content Page List",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/content-pages"
+          }
+        },
+        {
+          "name": "Content Page Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/api/content-pages/choose-your-adjustable-bed"
+          }
+        }
+      ]
+    }
+  ]
+}

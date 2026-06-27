@@ -1,6 +1,6 @@
 # Sosoft Beds Product API
 
-Cloudflare Worker API for Sosoft Beds product, category, content, search, sitemap, and AI discovery data.
+Machine-readable product catalogue API designed for search engines, AI assistants, and ecommerce integrations.
 
 Live API: https://products-api.sosoftbeds.workers.dev/
 
@@ -52,6 +52,13 @@ curl "https://products-api.sosoftbeds.workers.dev/api/content-pages/choose-your-
 
 More examples are available in [examples/requests.http](examples/requests.http).
 
+## Publish This On
+
+- GitHub repository: https://github.com/5starbeds/sosoftbeds-product-api
+- Website developer page: https://www.sosoftbeds.co.uk/developers
+- Postman collection: [postman/sosoftbeds-product-api.postman_collection.json](postman/sosoftbeds-product-api.postman_collection.json)
+- Technical blog post draft: [docs/how-sosoft-beds-built-an-ai-ready-product-api.md](docs/how-sosoft-beds-built-an-ai-ready-product-api.md)
+
 ## Local Development
 
 ```bash
@@ -87,6 +94,8 @@ npm run deploy
 - [scripts/fetch-content-pages.mjs](scripts/fetch-content-pages.mjs) - CMS/blog cache generator.
 - [openapi.json](openapi.json) - Static copy of the live OpenAPI document.
 - [examples/requests.http](examples/requests.http) - Example API requests.
+- [postman/sosoftbeds-product-api.postman_collection.json](postman/sosoftbeds-product-api.postman_collection.json) - Postman collection for API testing.
+- [docs/how-sosoft-beds-built-an-ai-ready-product-api.md](docs/how-sosoft-beds-built-an-ai-ready-product-api.md) - Technical blog post draft.
 
 ## Notes
 

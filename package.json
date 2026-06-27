@@ -1,7 +1,7 @@
 {
   "name": "sosoftbeds-product-api",
   "version": "0.0.0",
-  "description": "Cloudflare Worker product and content API for Sosoft Beds.",
+  "description": "Machine-readable product catalogue API designed for search engines, AI assistants, and ecommerce integrations.",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
