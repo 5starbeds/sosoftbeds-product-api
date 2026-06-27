@@ -3,6 +3,7 @@ import { CACHED_PRODUCTS } from './cached-products.js';
 import { CACHED_CONTENT_PAGES } from './cached-content-pages.js';
 
 const STORE_ORIGIN = 'https://www.sosoftbeds.co.uk';
+const CANONICAL_API_ORIGIN = 'https://api.sosoftbeds.co.uk';
 const BRAND_NAME = 'Sosoft Beds';
 const SOURCE_REPOSITORY_URL = 'https://github.com/5starbeds/sosoftbeds-product-api';
 
@@ -59,7 +60,7 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname;
     const acceptHeader = request.headers.get('accept') || '';
-    const origin = url.origin;
+    const origin = CANONICAL_API_ORIGIN;
 
     logCrawlerDiscoveryHit(request, url);
 
@@ -131,10 +132,18 @@ export default {
 
     if (pathname === '/') {
       return jsonResponse({
-        message: 'Sosoft Beds Product and Content API',
+        message: 'Sosoft Beds Product API',
+        description: 'Machine-readable ecommerce product catalogue.',
         website: STORE_ORIGIN,
+        canonical_api: CANONICAL_API_ORIGIN,
         source: SOURCE_REPOSITORY_URL,
         api_base: `${origin}/api/`,
+        resources: {
+          llm_guide: `${origin}/llms.txt`,
+          openapi: `${origin}/openapi.json`,
+          documentation: `${origin}/docs`,
+          products: `${origin}/api/products`,
+        },
         discovery: {
           llms_txt: `${origin}/llms.txt`,
           openapi: `${origin}/openapi.json`,
@@ -2195,10 +2204,10 @@ function formatProductMarkdown(product) {
 
   let md = `# ${product.name}
 
-**SKU:** \`${product.sku}\`  
-**Product ID:** \`${product.id}\`  
-**Price:** £${parseFloat(product.price).toFixed(2)}  
-**Status:** ${inStockBadge}  
+**SKU:** \`${product.sku}\`
+**Product ID:** \`${product.id}\`
+**Price:** £${parseFloat(product.price).toFixed(2)}
+**Status:** ${inStockBadge}
 **Type:** ${product.type_id}
 
 ## Description
@@ -2275,8 +2284,8 @@ ${product.description || product.short_description || 'No description available'
 
   md += `---
 
-**Generated:** ${new Date().toISOString()}  
-**Store:** www.sosoftbeds.co.uk  
+**Generated:** ${new Date().toISOString()}
+**Store:** www.sosoftbeds.co.uk
 **API:** Cloudflare Workers + Magento GraphQL
 `;
 
