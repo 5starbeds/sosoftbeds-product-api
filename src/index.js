@@ -822,7 +822,7 @@ function formatProductData(product) {
   data.delivery_time = extractDeliveryHint(data);
   data.faqs = buildFaqs(data);
   data.semantic = buildSemanticFields(data);
-  data.json_ld = buildProductJsonLd(data);
+  data.json_ld = buildProductJsonLd(data, product.storefront_product_json_ld);
 
   return compactApiObject(data);
 }
@@ -2516,7 +2516,11 @@ function buildSemanticFields(product) {
   };
 }
 
-function buildProductJsonLd(product) {
+function buildProductJsonLd(product, storefrontProductJsonLd) {
+  if (storefrontProductJsonLd?.['@type'] === 'Product') {
+    return withProductPageJsonLdDefaults(storefrontProductJsonLd, product);
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -2543,6 +2547,26 @@ function buildProductJsonLd(product) {
       '@type': 'AggregateRating',
       ratingValue: (product.rating_summary / 20).toFixed(1),
       reviewCount: product.review_count,
+    };
+  }
+
+  return jsonLd;
+}
+
+function withProductPageJsonLdDefaults(productJsonLd, product) {
+  const jsonLd = {
+    ...productJsonLd,
+    '@context': productJsonLd['@context'] || 'https://schema.org/',
+    '@type': 'Product',
+    url: productJsonLd.url || product.canonical_url,
+  };
+
+  const offer = Array.isArray(jsonLd.offers) ? jsonLd.offers[0] : jsonLd.offers;
+  if (offer) {
+    jsonLd.offers = {
+      ...offer,
+      '@type': offer['@type'] || 'Offer',
+      url: offer.url || product.canonical_url,
     };
   }
 

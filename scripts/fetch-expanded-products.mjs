@@ -142,9 +142,9 @@ for (let currentPage = 1; currentPage <= totalPages; currentPage += 1) {
 
   const pageProducts = await Promise.all((page.items || []).map(async product => {
     const productUrl = getProductUrl(product);
-    const storefrontTabs = includeStorefrontTabs ? await fetchStorefrontTabs(productUrl) : [];
+    const storefrontPage = includeStorefrontTabs ? await fetchStorefrontPageData(productUrl) : { tabs: [], productJsonLd: undefined };
 
-    return pruneProduct(product, productUrl, storefrontTabs);
+    return pruneProduct(product, productUrl, storefrontPage.tabs, storefrontPage.productJsonLd);
   }));
 
   products.push(...pageProducts);
@@ -189,7 +189,7 @@ const tabCount = products.reduce((total, product) => total + (product.storefront
 
 console.log(`Cached ${products.length}/${totalCount} products, ${optionCount} options, ${valueCount} option values, ${tabCount} storefront tabs.`);
 
-function pruneProduct(product, productUrl, storefrontTabs) {
+function pruneProduct(product, productUrl, storefrontTabs, storefrontProductJsonLd) {
   return compactObject({
     id: product.id,
     name: cleanText(product.name),
@@ -213,6 +213,7 @@ function pruneProduct(product, productUrl, storefrontTabs) {
     options: pruneOptions(product.options),
     product_page_url: productUrl,
     storefront_tabs: storefrontTabs,
+    storefront_product_json_ld: storefrontProductJsonLd,
     cache_generated_at: fetchedAt,
   });
 }
@@ -418,25 +419,199 @@ function getProductUrl(product) {
   return `${storeOrigin}/${path.replace(/^\/+/, '')}`;
 }
 
-async function fetchStorefrontTabs(productUrl) {
+async function fetchStorefrontPageData(productUrl) {
   try {
-    const response = await fetch(productUrl, {
+    const response = await fetch(getCacheBustedProductUrl(productUrl), {
       headers: {
         'user-agent': 'SosoftBedsProductCache/1.0 (+https://api.sosoftbeds.co.uk/llms.txt)',
+        'cache-control': 'no-cache',
+        pragma: 'no-cache',
       },
     });
 
     if (!response.ok) {
-      console.warn(`Tabs fetch skipped for ${productUrl}: HTTP ${response.status}`);
-      return [];
+      console.warn(`Storefront page fetch skipped for ${productUrl}: HTTP ${response.status}`);
+      return { tabs: [], productJsonLd: undefined };
     }
 
     const html = await response.text();
-    return extractStorefrontTabs(html);
+    return {
+      tabs: extractStorefrontTabs(html),
+      productJsonLd: extractProductJsonLd(html, productUrl),
+    };
   } catch (error) {
-    console.warn(`Tabs fetch failed for ${productUrl}: ${error.message}`);
-    return [];
+    console.warn(`Storefront page fetch failed for ${productUrl}: ${error.message}`);
+    return { tabs: [], productJsonLd: undefined };
   }
+}
+
+function getCacheBustedProductUrl(productUrl) {
+  const url = new URL(productUrl);
+  url.searchParams.set('api_schema_refresh', fetchedAt.replace(/\D/g, ''));
+  return url.toString();
+}
+
+function extractProductJsonLd(html, productUrl) {
+  const scripts = html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+
+  for (const script of scripts) {
+    const rawJson = decodeHtml(script[1]).trim();
+    if (!rawJson) continue;
+
+    try {
+      const parsed = JSON.parse(rawJson);
+      const productNode = findProductJsonLdNode(parsed);
+      if (productNode) {
+        return normalizeProductJsonLd(productNode, productUrl);
+      }
+    } catch (error) {
+      console.warn(`Product JSON-LD parse skipped for ${productUrl}: ${error.message}`);
+    }
+  }
+
+  return undefined;
+}
+
+function findProductJsonLdNode(value) {
+  if (!value) return undefined;
+  if (Array.isArray(value)) {
+    return value.map(findProductJsonLdNode).find(Boolean);
+  }
+  if (Array.isArray(value['@graph'])) {
+    return findProductJsonLdNode(value['@graph']);
+  }
+  const type = value['@type'];
+  if (type === 'Product' || (Array.isArray(type) && type.includes('Product'))) {
+    return value;
+  }
+  return undefined;
+}
+
+function normalizeProductJsonLd(productJsonLd, productUrl) {
+  const jsonLd = compactObject({
+    '@context': productJsonLd['@context'] || 'https://schema.org/',
+    '@type': 'Product',
+    name: cleanText(productJsonLd.name),
+    description: cleanText(productJsonLd.description),
+    sku: cleanText(productJsonLd.sku),
+    mpn: cleanText(productJsonLd.mpn),
+    gtin: cleanText(productJsonLd.gtin || productJsonLd.gtin13 || productJsonLd.gtin14),
+    googleProductCategory: cleanText(productJsonLd.googleProductCategory),
+    image: normalizeJsonLdImages(productJsonLd.image),
+    url: productJsonLd.url || productUrl,
+    brand: normalizeJsonLdBrand(productJsonLd.brand),
+    offers: normalizeJsonLdOffer(productJsonLd.offers, productUrl),
+    aggregateRating: normalizeAggregateRating(productJsonLd.aggregateRating),
+    additionalProperty: normalizeAdditionalProperties(productJsonLd.additionalProperty),
+  });
+
+  if (!jsonLd.name || !jsonLd.sku || !jsonLd.offers) return undefined;
+  return jsonLd;
+}
+
+function normalizeJsonLdImages(images) {
+  const values = Array.isArray(images) ? images : images ? [images] : [];
+  return values.map(image => cleanText(image)).filter(Boolean);
+}
+
+function normalizeJsonLdBrand(brand) {
+  if (!brand) return undefined;
+  if (typeof brand === 'string') return { '@type': 'Brand', name: cleanText(brand) };
+  return compactObject({
+    '@type': brand['@type'] || 'Brand',
+    name: cleanText(brand.name),
+  });
+}
+
+function normalizeJsonLdOffer(offers, productUrl) {
+  const offer = Array.isArray(offers) ? offers[0] : offers;
+  if (!offer) return undefined;
+
+  return compactObject({
+    '@type': offer['@type'] || 'Offer',
+    priceCurrency: cleanText(offer.priceCurrency),
+    price: cleanText(offer.price),
+    priceValidFrom: cleanText(offer.priceValidFrom),
+    priceValidUntil: cleanText(offer.priceValidUntil),
+    availability: cleanText(offer.availability),
+    url: cleanText(offer.url || productUrl),
+    brand: normalizeJsonLdBrand(offer.brand),
+    hasMerchantReturnPolicy: normalizeMerchantReturnPolicy(offer.hasMerchantReturnPolicy),
+    shippingDetails: normalizeShippingDetails(offer.shippingDetails),
+  });
+}
+
+function normalizeMerchantReturnPolicy(policy) {
+  if (!policy) return undefined;
+  return compactObject({
+    '@type': policy['@type'] || 'MerchantReturnPolicy',
+    applicableCountry: cleanText(policy.applicableCountry),
+    returnPolicyCategory: cleanText(policy.returnPolicyCategory),
+    merchantReturnDays: keepNonZero(policy.merchantReturnDays),
+    returnMethod: cleanText(policy.returnMethod),
+    returnFees: cleanText(policy.returnFees),
+  });
+}
+
+function normalizeShippingDetails(shippingDetails) {
+  const details = Array.isArray(shippingDetails) ? shippingDetails[0] : shippingDetails;
+  if (!details) return undefined;
+
+  return compactObject({
+    '@type': details['@type'] || 'OfferShippingDetails',
+    shippingRate: details.shippingRate ? compactObject({
+      '@type': details.shippingRate['@type'] || 'MonetaryAmount',
+      currency: cleanText(details.shippingRate.currency),
+      value: cleanText(details.shippingRate.value),
+    }) : undefined,
+    shippingDestination: details.shippingDestination ? compactObject({
+      '@type': details.shippingDestination['@type'] || 'DefinedRegion',
+      addressCountry: cleanText(details.shippingDestination.addressCountry),
+    }) : undefined,
+    deliveryTime: normalizeDeliveryTime(details.deliveryTime),
+  });
+}
+
+function normalizeDeliveryTime(deliveryTime) {
+  if (!deliveryTime) return undefined;
+  return compactObject({
+    '@type': deliveryTime['@type'] || 'ShippingDeliveryTime',
+    handlingTime: normalizeQuantitativeValue(deliveryTime.handlingTime),
+    transitTime: normalizeQuantitativeValue(deliveryTime.transitTime),
+  });
+}
+
+function normalizeQuantitativeValue(value) {
+  if (!value) return undefined;
+  return compactObject({
+    '@type': value['@type'] || 'QuantitativeValue',
+    minValue: keepNonZero(value.minValue),
+    maxValue: keepNonZero(value.maxValue),
+    unitCode: cleanText(value.unitCode),
+  });
+}
+
+function normalizeAggregateRating(rating) {
+  if (!rating) return undefined;
+  return compactObject({
+    '@type': rating['@type'] || 'AggregateRating',
+    ratingValue: cleanText(rating.ratingValue),
+    bestRating: cleanText(rating.bestRating),
+    worstRating: cleanText(rating.worstRating),
+    ratingCount: cleanText(rating.ratingCount),
+    reviewCount: cleanText(rating.reviewCount),
+  });
+}
+
+function normalizeAdditionalProperties(properties) {
+  if (!Array.isArray(properties)) return undefined;
+  return properties
+    .map(property => compactObject({
+      '@type': property['@type'] || 'PropertyValue',
+      name: cleanText(property.name),
+      value: cleanText(property.value),
+    }))
+    .filter(property => property.name && property.value);
 }
 
 function extractStorefrontTabs(html) {

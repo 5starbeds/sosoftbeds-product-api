@@ -249,6 +249,32 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.image_gallery.length).toBeGreaterThan(0);
 	});
 
+	it("uses storefront Product JSON-LD when available", async () => {
+		const response = await fetchWorker("/api/products/grandeur-ottoman-bed-warwick-fabrics");
+		const body = await response.json() as {
+			json_ld: {
+				"@type": string;
+				sku: string;
+				offers: {
+					price: string;
+					shippingDetails?: unknown;
+					hasMerchantReturnPolicy?: unknown;
+				};
+				aggregateRating?: { reviewCount: string };
+				additionalProperty?: unknown[];
+			};
+		};
+
+		expect(response.status).toBe(200);
+		expect(body.json_ld["@type"]).toBe("Product");
+		expect(body.json_ld.sku).toBe("Grandeur697");
+		expect(body.json_ld.offers.price).toBe("475.00");
+		expect(body.json_ld.aggregateRating?.reviewCount).toBe("292");
+		expect(body.json_ld.offers.shippingDetails).toBeTruthy();
+		expect(body.json_ld.offers.hasMerchantReturnPolicy).toBeTruthy();
+		expect(body.json_ld.additionalProperty?.length).toBeGreaterThan(0);
+	});
+
 	it("serves the OpenAPI spec in integration mode", async () => {
 		const response = await SELF.fetch("http://example.com/openapi.json");
 		const body = await response.json() as {
