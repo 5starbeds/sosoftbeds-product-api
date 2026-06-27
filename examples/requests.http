@@ -1,0 +1,49 @@
+@baseUrl = https://products-api.sosoftbeds.workers.dev
+
+### API homepage
+GET {{baseUrl}}/
+Accept: application/json
+
+### HTML documentation
+GET {{baseUrl}}/docs
+Accept: text/html
+
+### OpenAPI spec
+GET {{baseUrl}}/openapi.json
+Accept: application/json
+
+### LLM guide
+GET {{baseUrl}}/llms.txt
+Accept: text/markdown
+
+### Product sitemap
+GET {{baseUrl}}/products-sitemap.xml
+Accept: application/xml
+
+### Product list
+GET {{baseUrl}}/api/products?page=1&limit=10
+Accept: application/json
+
+### Product detail by slug
+GET {{baseUrl}}/api/products/60cm-ottoman-bed
+Accept: application/json
+
+### Natural-language search
+GET {{baseUrl}}/api/search?q=king%20size%20ottoman%20beds%20under%20500
+Accept: application/json
+
+### Configured price from selected option values
+GET {{baseUrl}}/api/products/60cm-ottoman-bed/price?values=134102
+Accept: application/json
+
+### Categories
+GET {{baseUrl}}/api/categories
+Accept: application/json
+
+### Content pages
+GET {{baseUrl}}/api/content-pages
+Accept: application/json
+
+### Content page by slug
+GET {{baseUrl}}/api/content-pages/choose-your-adjustable-bed
+Accept: application/json

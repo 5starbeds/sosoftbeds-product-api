@@ -1,0 +1,31 @@
+{
+  "name": "sosoftbeds-product-api",
+  "version": "0.0.0",
+  "description": "Cloudflare Worker product and content API for Sosoft Beds.",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "cache-products": "node scripts/fetch-expanded-products.mjs",
+    "cache-content": "node scripts/fetch-content-pages.mjs",
+    "cache-all": "npm run cache-products && npm run cache-content",
+    "test": "vitest",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.4",
+    "typescript": "^5.5.2",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.105.0"
+  },
+  "main": "src/index.js",
+  "keywords": [
+    "cloudflare-workers",
+    "openapi",
+    "product-api",
+    "sosoft-beds"
+  ],
+  "author": "",
+  "license": "ISC"
+}

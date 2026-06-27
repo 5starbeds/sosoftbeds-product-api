@@ -1,0 +1,18 @@
+name = "products-api"
+main = "src/index.js"
+compatibility_date = "2026-06-27"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+vars = { MAGENTO_DOMAIN = "www.sosoftbeds.co.uk" }
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+
+[[kv_namespaces]]
+binding = "PRODUCT_KV"
+id = "products-cache"
+preview_id = "products-cache-preview"
