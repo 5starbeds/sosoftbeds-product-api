@@ -5,6 +5,10 @@
     "version": "1.0.0",
     "description": "Enriched product and content data for SSR, AI agents, JSON-LD, product comparison, blog context, CMS pages, and feeds."
   },
+  "externalDocs": {
+    "description": "Source repository",
+    "url": "https://github.com/5starbeds/sosoftbeds-product-api"
+  },
   "servers": [
     {
       "url": "https://products-api.sosoftbeds.workers.dev"

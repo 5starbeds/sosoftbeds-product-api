@@ -15,11 +15,13 @@ describe("Sosoft Beds Product API", () => {
 		const response = await fetchWorker("/");
 		const body = await response.json() as {
 			message: string;
+			source: string;
 			discovery: Record<string, string>;
 		};
 
 		expect(response.status).toBe(200);
 		expect(body.message).toBe("Sosoft Beds Product and Content API");
+		expect(body.source).toBe("https://github.com/5starbeds/sosoftbeds-product-api");
 		expect(body.discovery.openapi).toBe("http://example.com/openapi.json");
 		expect(body.discovery.docs).toBe("http://example.com/docs");
 	});

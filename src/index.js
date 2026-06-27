@@ -4,6 +4,7 @@ import { CACHED_CONTENT_PAGES } from './cached-content-pages.js';
 
 const STORE_ORIGIN = 'https://www.sosoftbeds.co.uk';
 const BRAND_NAME = 'Sosoft Beds';
+const SOURCE_REPOSITORY_URL = 'https://github.com/5starbeds/sosoftbeds-product-api';
 
 const OPTION_VALUE_KEYS = [
   'dropdown_value',
@@ -132,6 +133,7 @@ export default {
       return jsonResponse({
         message: 'Sosoft Beds Product and Content API',
         website: STORE_ORIGIN,
+        source: SOURCE_REPOSITORY_URL,
         api_base: `${origin}/api/`,
         discovery: {
           llms_txt: `${origin}/llms.txt`,
@@ -1050,6 +1052,7 @@ Authentication: none. The API is public and does not require authentication.
 - OpenAPI specification: ${origin}/openapi.json
 - Human-readable API docs: ${origin}/docs
 - Product and content sitemap: ${origin}/products-sitemap.xml
+- Source repository: ${SOURCE_REPOSITORY_URL}
 - Products index: ${origin}/api/products
 - Categories index: ${origin}/api/categories
 - Search: ${origin}/api/search?q=ottoman
@@ -1184,6 +1187,7 @@ function formatDocsHtml(origin) {
       <h2>Base URL</h2>
       <pre>${origin}</pre>
       <p>Authentication is not required. Responses are cacheable and support cross-origin requests.</p>
+      <p>Source: <a href="${SOURCE_REPOSITORY_URL}">${SOURCE_REPOSITORY_URL}</a></p>
     </section>
 
     <h2>Discovery</h2>
@@ -1279,6 +1283,10 @@ function formatOpenApiSpec(origin) {
       title: 'Sosoft Beds Product And Content API',
       version: '1.0.0',
       description: 'Enriched product and content data for SSR, AI agents, JSON-LD, product comparison, blog context, CMS pages, and feeds.',
+    },
+    externalDocs: {
+      description: 'Source repository',
+      url: SOURCE_REPOSITORY_URL,
     },
     servers: [{ url: origin }],
     paths: {
