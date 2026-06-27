@@ -7,7 +7,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://products-api.sosoftbeds.workers.dev",
+      "value": "https://api.sosoftbeds.co.uk",
       "type": "string"
     }
   ],

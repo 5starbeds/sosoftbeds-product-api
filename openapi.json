@@ -11,7 +11,7 @@
   },
   "servers": [
     {
-      "url": "https://products-api.sosoftbeds.workers.dev"
+      "url": "https://api.sosoftbeds.co.uk"
     }
   ],
   "paths": {
@@ -63,7 +63,7 @@
                   "page": 1,
                   "page_size": 5,
                   "total_pages": 47,
-                  "next_page": "https://products-api.sosoftbeds.workers.dev/api/products?page=2&pageSize=5",
+                  "next_page": "https://api.sosoftbeds.co.uk/api/products?page=2&pageSize=5",
                   "products": [
                     {
                       "sku": "60cm-ottoman-bed",
@@ -74,8 +74,8 @@
                       "currency": "GBP",
                       "availability": "IN_STOCK",
                       "canonical_url": "https://www.sosoftbeds.co.uk/60cm-ottoman-bed",
-                      "api_url": "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed",
-                      "markdown_url": "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed",
+                      "api_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
+                      "markdown_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
                       "categories": [
                         "Adjustable Beds"
                       ],
@@ -420,8 +420,8 @@
                           "currency": "GBP",
                           "availability": "IN_STOCK",
                           "canonical_url": "https://www.sosoftbeds.co.uk/60cm-ottoman-bed",
-                          "api_url": "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed",
-                          "markdown_url": "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed",
+                          "api_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
+                          "markdown_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
                           "categories": [
                             "Adjustable Beds"
                           ],
@@ -506,8 +506,8 @@
                       "currency": "GBP",
                       "availability": "IN_STOCK",
                       "canonical_url": "https://www.sosoftbeds.co.uk/60cm-ottoman-bed",
-                      "api_url": "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed",
-                      "markdown_url": "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed",
+                      "api_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
+                      "markdown_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
                       "categories": [
                         "Adjustable Beds"
                       ],
@@ -559,8 +559,8 @@
                       "title": "Choose Your Adjustable Bed",
                       "h1": "Choose Your Adjustable Bed",
                       "canonical_url": "https://www.sosoftbeds.co.uk/choose-your-adjustable-bed",
-                      "api_url": "https://products-api.sosoftbeds.workers.dev/api/content-pages/choose-your-adjustable-bed",
-                      "markdown_url": "https://products-api.sosoftbeds.workers.dev/api/content-pages/choose-your-adjustable-bed",
+                      "api_url": "https://api.sosoftbeds.co.uk/api/content-pages/choose-your-adjustable-bed",
+                      "markdown_url": "https://api.sosoftbeds.co.uk/api/content-pages/choose-your-adjustable-bed",
                       "word_count": 1200,
                       "heading_count": 8,
                       "link_count": 12

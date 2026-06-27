@@ -33,17 +33,17 @@ That means public API requests do not need to query Magento GraphQL in real time
 ## Key Endpoints
 
 ```text
-GET https://products-api.sosoftbeds.workers.dev/
-GET https://products-api.sosoftbeds.workers.dev/docs
-GET https://products-api.sosoftbeds.workers.dev/openapi.json
-GET https://products-api.sosoftbeds.workers.dev/llms.txt
-GET https://products-api.sosoftbeds.workers.dev/products-sitemap.xml
-GET https://products-api.sosoftbeds.workers.dev/api/products
-GET https://products-api.sosoftbeds.workers.dev/api/products/{slug}
-GET https://products-api.sosoftbeds.workers.dev/api/products/{slug}/price?values={optionValueIds}
-GET https://products-api.sosoftbeds.workers.dev/api/categories
-GET https://products-api.sosoftbeds.workers.dev/api/search?q={query}
-GET https://products-api.sosoftbeds.workers.dev/api/content-pages
+GET https://api.sosoftbeds.co.uk/
+GET https://api.sosoftbeds.co.uk/docs
+GET https://api.sosoftbeds.co.uk/openapi.json
+GET https://api.sosoftbeds.co.uk/llms.txt
+GET https://api.sosoftbeds.co.uk/products-sitemap.xml
+GET https://api.sosoftbeds.co.uk/api/products
+GET https://api.sosoftbeds.co.uk/api/products/{slug}
+GET https://api.sosoftbeds.co.uk/api/products/{slug}/price?values={optionValueIds}
+GET https://api.sosoftbeds.co.uk/api/categories
+GET https://api.sosoftbeds.co.uk/api/search?q={query}
+GET https://api.sosoftbeds.co.uk/api/content-pages
 ```
 
 ## Discovery Signals

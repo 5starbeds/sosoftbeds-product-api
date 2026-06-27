@@ -2,15 +2,15 @@
 
 Machine-readable product catalogue API designed for search engines, AI assistants, and ecommerce integrations.
 
-Live API: https://products-api.sosoftbeds.workers.dev/
+Live API: https://api.sosoftbeds.co.uk/
 
-API docs: https://products-api.sosoftbeds.workers.dev/docs
+API docs: https://api.sosoftbeds.co.uk/docs
 
-OpenAPI spec: https://products-api.sosoftbeds.workers.dev/openapi.json
+OpenAPI spec: https://api.sosoftbeds.co.uk/openapi.json
 
-Product sitemap: https://products-api.sosoftbeds.workers.dev/products-sitemap.xml
+Product sitemap: https://api.sosoftbeds.co.uk/products-sitemap.xml
 
-LLM guide: https://products-api.sosoftbeds.workers.dev/llms.txt
+LLM guide: https://api.sosoftbeds.co.uk/llms.txt
 
 ## What This API Provides
 
@@ -42,12 +42,12 @@ GET /api/content-pages/{slug}
 ## Example Requests
 
 ```bash
-curl "https://products-api.sosoftbeds.workers.dev/api/products?page=1&limit=10"
-curl "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed"
-curl "https://products-api.sosoftbeds.workers.dev/api/search?q=king+size+ottoman+beds+under+500"
-curl "https://products-api.sosoftbeds.workers.dev/api/products/60cm-ottoman-bed/price?values=134102"
-curl "https://products-api.sosoftbeds.workers.dev/api/categories"
-curl "https://products-api.sosoftbeds.workers.dev/api/content-pages/choose-your-adjustable-bed"
+curl "https://api.sosoftbeds.co.uk/api/products?page=1&limit=10"
+curl "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed"
+curl "https://api.sosoftbeds.co.uk/api/search?q=king+size+ottoman+beds+under+500"
+curl "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed/price?values=134102"
+curl "https://api.sosoftbeds.co.uk/api/categories"
+curl "https://api.sosoftbeds.co.uk/api/content-pages/choose-your-adjustable-bed"
 ```
 
 More examples are available in [examples/requests.http](examples/requests.http).

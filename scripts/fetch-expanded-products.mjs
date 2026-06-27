@@ -422,7 +422,7 @@ async function fetchStorefrontTabs(productUrl) {
   try {
     const response = await fetch(productUrl, {
       headers: {
-        'user-agent': 'SosoftBedsProductCache/1.0 (+https://products-api.sosoftbeds.workers.dev/llms.txt)',
+        'user-agent': 'SosoftBedsProductCache/1.0 (+https://api.sosoftbeds.co.uk/llms.txt)',
       },
     });
 

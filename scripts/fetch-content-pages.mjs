@@ -15,7 +15,7 @@ const pages = [];
 for (const pageUrl of pageUrls) {
   const response = await fetch(pageUrl, {
     headers: {
-      'user-agent': 'SosoftBedsContentCache/1.0 (+https://products-api.sosoftbeds.workers.dev/llms.txt)',
+      'user-agent': 'SosoftBedsContentCache/1.0 (+https://api.sosoftbeds.co.uk/llms.txt)',
     },
   });
 

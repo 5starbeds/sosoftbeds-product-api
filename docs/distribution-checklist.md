@@ -5,11 +5,11 @@ Use these external discovery surfaces to create indexed pages that point back to
 ## Already In Place
 
 - GitHub repository: https://github.com/5starbeds/sosoftbeds-product-api
-- API root source link: https://products-api.sosoftbeds.workers.dev/
-- OpenAPI spec: https://products-api.sosoftbeds.workers.dev/openapi.json
-- LLM guide: https://products-api.sosoftbeds.workers.dev/llms.txt
-- Product sitemap: https://products-api.sosoftbeds.workers.dev/products-sitemap.xml
-- API docs: https://products-api.sosoftbeds.workers.dev/docs
+- API root source link: https://api.sosoftbeds.co.uk/
+- OpenAPI spec: https://api.sosoftbeds.co.uk/openapi.json
+- LLM guide: https://api.sosoftbeds.co.uk/llms.txt
+- Product sitemap: https://api.sosoftbeds.co.uk/products-sitemap.xml
+- API docs: https://api.sosoftbeds.co.uk/docs
 
 ## Publish Next
 
@@ -24,10 +24,10 @@ Use these external discovery surfaces to create indexed pages that point back to
 Every external post should link to these four resources:
 
 ```text
-https://products-api.sosoftbeds.workers.dev/
+https://api.sosoftbeds.co.uk/
 https://github.com/5starbeds/sosoftbeds-product-api
-https://products-api.sosoftbeds.workers.dev/openapi.json
-https://products-api.sosoftbeds.workers.dev/products-sitemap.xml
+https://api.sosoftbeds.co.uk/openapi.json
+https://api.sosoftbeds.co.uk/products-sitemap.xml
 ```
 
 The purpose is visibility, not more endpoint coverage. The API is already crawlable; the next win is getting trusted indexed pages to point at it.

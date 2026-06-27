@@ -1,4 +1,4 @@
-@baseUrl = https://products-api.sosoftbeds.workers.dev
+@baseUrl = https://api.sosoftbeds.co.uk
 
 ### API homepage
 GET {{baseUrl}}/
