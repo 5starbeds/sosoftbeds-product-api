@@ -1,0 +1,67 @@
+name: Refresh and deploy product API
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GitHub Actions schedules use UTC.
+    - cron: "0 2 * * *" # Nightly refresh
+    - cron: "0 4 * * 0" # Weekly Sunday 04:00 refresh
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-and-deploy-product-api
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    name: Refresh cache and deploy Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Refresh embedded Magento cache
+        run: npm run cache-all
+        env:
+          MAGENTO_GRAPHQL_URL: https://www.sosoftbeds.co.uk/graphql
+          MAGENTO_STORE_ORIGIN: https://www.sosoftbeds.co.uk
+
+      - name: Run tests
+        run: npm test -- --run
+
+      - name: Commit refreshed cache
+        id: cache-commit
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/cached-products.js src/cached-content-pages.js
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No embedded cache changes to commit."
+          else
+            git commit -m "Refresh embedded API cache"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy Worker to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

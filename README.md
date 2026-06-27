@@ -79,6 +79,28 @@ Or refresh both:
 npm run cache-all
 ```
 
+## Automated Refresh And Deploy
+
+The repository includes a GitHub Actions workflow at `.github/workflows/refresh-and-deploy.yml`.
+
+Schedule:
+
+```text
+Nightly: 0 2 * * * UTC
+Sunday full refresh: 0 4 * * 0 UTC
+```
+
+The workflow refreshes the embedded Magento product/content cache, runs tests, commits changed cache files back to `main`, and deploys the Worker to Cloudflare.
+
+Required GitHub repository secrets:
+
+```text
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_API_TOKEN
+```
+
+The Cloudflare token should be scoped to edit Workers on the account that owns `products-api`.
+
 ## Deploy
 
 ```bash

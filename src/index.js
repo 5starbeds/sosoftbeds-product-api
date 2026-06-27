@@ -162,7 +162,18 @@ export default {
         },
         sync: {
           method: 'scheduled',
-          frequency: 'daily',
+          frequency: 'nightly plus weekly Sunday 04:00',
+          timezone: 'UTC',
+          schedule: [
+            {
+              type: 'nightly',
+              cron: '0 2 * * *',
+            },
+            {
+              type: 'weekly_full_refresh',
+              cron: '0 4 * * 0',
+            },
+          ],
         },
         capabilities: [
           'product discovery',

@@ -40,6 +40,11 @@ describe("Sosoft Beds Product API", () => {
 			sync: {
 				method: string;
 				frequency: string;
+				timezone: string;
+				schedule: Array<{
+					type: string;
+					cron: string;
+				}>;
 			};
 			capabilities: string[];
 			entities: string[];
@@ -95,7 +100,12 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.data.content_last_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(body.data.cache_type).toBe("embedded");
 		expect(body.sync.method).toBe("scheduled");
-		expect(body.sync.frequency).toBe("daily");
+		expect(body.sync.frequency).toBe("nightly plus weekly Sunday 04:00");
+		expect(body.sync.timezone).toBe("UTC");
+		expect(body.sync.schedule).toEqual([
+			{ type: "nightly", cron: "0 2 * * *" },
+			{ type: "weekly_full_refresh", cron: "0 4 * * 0" },
+		]);
 		expect(body.capabilities).toContain("natural language search");
 		expect(body.capabilities).toContain("pricing lookup");
 		expect(body.entities).toEqual(["Product", "Category", "ContentPage", "Price", "Variant"]);
