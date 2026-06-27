@@ -24,6 +24,11 @@ describe("Sosoft Beds Product API", () => {
 			};
 			canonical: string;
 			api_version: string;
+			schema: {
+				type: string;
+				version: string;
+			};
+			default_language: string;
 			data_updated: string;
 			data: {
 				source: string;
@@ -80,6 +85,9 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.canonical).toBe("https://api.sosoftbeds.co.uk");
 		expect(body).not.toHaveProperty("canonical_api");
 		expect(body.api_version).toBe("1.0");
+		expect(body.schema.type).toBe("OpenAPI");
+		expect(body.schema.version).toBe("3.1");
+		expect(body.default_language).toBe("en-GB");
 		expect(body.data_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
 		expect(body.data.source).toBe("Magento");
 		expect(body.data.last_updated).toBe(body.data_updated);

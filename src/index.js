@@ -147,6 +147,11 @@ export default {
         },
         canonical: CANONICAL_API_ORIGIN,
         api_version: API_VERSION,
+        schema: {
+          type: 'OpenAPI',
+          version: '3.1',
+        },
+        default_language: 'en-GB',
         data_updated: DATA_UPDATED,
         data: {
           source: 'Magento',
