@@ -115,6 +115,14 @@ export default {
       return handleGetProductBySlug(slug, env, acceptHeader);
     }
 
+    if (pathname.startsWith('/api/categories/')) {
+      const slug = decodeURIComponent(pathname.slice('/api/categories/'.length));
+      if (!slug) {
+        return jsonResponse({ error: 'Category slug required' }, 400);
+      }
+      return handleGetCategoryBySlug(slug, origin, url.searchParams);
+    }
+
     if (pathname === '/api/categories') {
       return jsonResponse(getCategoryIndex(origin));
     }
@@ -895,37 +903,20 @@ function getProductSlug(product) {
 }
 
 function getCategoryIndex(origin) {
-  const categoryMap = new Map();
-
-  CACHED_PRODUCTS.forEach(product => {
-    const categories = normalizeCategories(product.categories);
-    const slug = getProductSlug(product);
-    const productSummary = {
-      sku: product.sku,
-      slug,
-      name: product.name,
-      api_url: `${origin}/api/products/${encodeURIComponent(slug)}`,
-    };
-
-    categories.forEach(category => {
-      const key = category.url_path || category.url_key || String(category.id);
-      const existing = categoryMap.get(key) || {
-        id: category.id,
-        name: category.name,
-        slug: category.url_path || category.url_key,
-        url: category.url,
-        level: category.level,
-        product_count: 0,
-        products: [],
-      };
-
-      existing.product_count += 1;
-      if (existing.products.length < 25) existing.products.push(productSummary);
-      categoryMap.set(key, existing);
-    });
-  });
-
-  const categories = [...categoryMap.values()]
+  const categories = getCategoryRecords(origin)
+    .map(category => compactApiObject({
+      id: category.id,
+      uid: category.uid,
+      name: category.name,
+      slug: category.slug,
+      url: category.url,
+      canonical_url: category.canonical_url,
+      api_url: category.api_url,
+      level: category.level,
+      parent_category: category.parent_category,
+      product_count: category.product_count,
+      last_updated: category.last_updated,
+    }))
     .sort(compareCategorySummaries);
 
   return {
@@ -933,6 +924,176 @@ function getCategoryIndex(origin) {
     total: categories.length,
     categories,
   };
+}
+
+function handleGetCategoryBySlug(slug, origin, searchParams) {
+  const categories = getCategoryRecords(origin);
+  const category = findCategoryRecord(categories, slug);
+
+  if (!category) {
+    return jsonResponse({ error: 'Category not found', slug }, 404);
+  }
+
+  const pagination = getPagination(searchParams, category.products.length);
+  const products = category.products.slice(pagination.start, pagination.end);
+  const baseUrl = `${origin}/api/categories/${encodeURIComponent(category.slug)}`;
+
+  return jsonResponse(compactApiObject({
+    message: 'Category detail',
+    id: category.id,
+    uid: category.uid,
+    name: category.name,
+    slug: category.slug,
+    url: category.url,
+    canonical_url: category.canonical_url,
+    api_url: category.api_url,
+    level: category.level,
+    breadcrumbs: category.breadcrumbs,
+    parent_category: category.parent_category,
+    child_categories: category.child_categories,
+    product_count: category.product_count,
+    page: pagination.page,
+    page_size: pagination.pageSize,
+    total_pages: pagination.totalPages,
+    next_page: pagination.page < pagination.totalPages ? `${baseUrl}?page=${pagination.page + 1}&pageSize=${pagination.pageSize}` : undefined,
+    previous_page: pagination.page > 1 ? `${baseUrl}?page=${pagination.page - 1}&pageSize=${pagination.pageSize}` : undefined,
+    products,
+    last_updated: category.last_updated,
+    seo: category.seo,
+    featured_image: category.featured_image,
+  }));
+}
+
+function getCategoryRecords(origin) {
+  const productSummaries = new Map(getProductSummaries(origin).map(product => [product.sku, product]));
+  const categoryMap = new Map();
+
+  CACHED_PRODUCTS.forEach(product => {
+    const categories = normalizeCategories(product.categories);
+    const slug = getProductSlug(product);
+    const productSummary = productSummaries.get(product.sku) || compactApiObject({
+      sku: product.sku,
+      slug,
+      name: product.name,
+      api_url: `${origin}/api/products/${encodeURIComponent(slug)}`,
+    });
+
+    categories.forEach(category => {
+      const key = category.url_path || category.url_key || String(category.id);
+      const existing = categoryMap.get(key) || {
+        id: category.id,
+        uid: category.uid,
+        name: category.name,
+        slug: category.url_path || category.url_key,
+        url: category.url,
+        canonical_url: category.url,
+        api_url: `${origin}/api/categories/${encodeURIComponent(category.url_path || category.url_key || String(category.id))}`,
+        level: category.level,
+        breadcrumbs: normalizeCategoryBreadcrumbs(category, origin),
+        product_count: 0,
+        products: [],
+        last_updated_values: [],
+        featured_image: undefined,
+      };
+
+      existing.product_count += 1;
+      existing.products.push(productSummary);
+      if (product.cache_generated_at) existing.last_updated_values.push(product.cache_generated_at);
+      existing.featured_image ||= getCategoryFeaturedImage(product);
+      categoryMap.set(key, existing);
+    });
+  });
+
+  const categories = [...categoryMap.values()];
+  const categoryBySlug = new Map(categories.map(category => [category.slug, category]));
+
+  categories.forEach(category => {
+    const parentSlug = getParentCategorySlug(category.slug);
+    const parent = parentSlug ? categoryBySlug.get(parentSlug) : undefined;
+
+    category.parent_category = parent ? compactApiObject({
+      id: parent.id,
+      name: parent.name,
+      slug: parent.slug,
+      url: parent.url,
+      api_url: parent.api_url,
+    }) : getBreadcrumbParent(category.breadcrumbs);
+
+    category.child_categories = categories
+      .filter(candidate => getParentCategorySlug(candidate.slug) === category.slug)
+      .map(child => compactApiObject({
+        id: child.id,
+        name: child.name,
+        slug: child.slug,
+        url: child.url,
+        api_url: child.api_url,
+        product_count: child.product_count,
+      }))
+      .sort(compareCategorySummaries);
+
+    category.products = category.products.sort(compareCategoryProducts);
+    category.last_updated = category.last_updated_values.sort().reverse()[0]?.slice(0, 10) || DATA_UPDATED;
+    category.seo = compactApiObject({
+      title: `${category.name} | ${BRAND_NAME}`,
+      meta_description: `Browse ${category.product_count} ${category.name} product${category.product_count === 1 ? '' : 's'} from ${BRAND_NAME}.`,
+    });
+    delete category.last_updated_values;
+  });
+
+  return categories;
+}
+
+function compareCategoryProducts(left, right) {
+  return (left.sort_group?.rank || 50) - (right.sort_group?.rank || 50)
+    || left.name.localeCompare(right.name);
+}
+
+function findCategoryRecord(categories, slug) {
+  const normalized = normalizeLookupValue(slug);
+  return categories.find(category => normalizeLookupValue(category.slug) === normalized)
+    || categories.find(category => normalizeLookupValue(category.name) === normalized)
+    || categories.find(category => normalizeLookupValue(String(category.id)) === normalized)
+    || categories
+      .filter(category => normalizeLookupValue(category.slug).endsWith(`/${normalized}`))
+      .sort((left, right) => right.product_count - left.product_count)[0];
+}
+
+function normalizeCategoryBreadcrumbs(category, origin) {
+  if (!Array.isArray(category.breadcrumbs)) return [];
+
+  return category.breadcrumbs.map(crumb => compactApiObject({
+    id: crumb.category_id,
+    name: crumb.category_name,
+    slug: crumb.category_url_path || crumb.category_url_key,
+    url: crumb.category_url_path ? `${STORE_ORIGIN}/${crumb.category_url_path}` : undefined,
+    api_url: crumb.category_url_path || crumb.category_url_key ? `${origin}/api/categories/${encodeURIComponent(crumb.category_url_path || crumb.category_url_key)}` : undefined,
+  }));
+}
+
+function getBreadcrumbParent(breadcrumbs) {
+  const parent = Array.isArray(breadcrumbs) ? breadcrumbs[breadcrumbs.length - 1] : undefined;
+  return parent ? compactApiObject(parent) : undefined;
+}
+
+function getParentCategorySlug(slug) {
+  const parts = String(slug || '').split('/').filter(Boolean);
+  if (parts.length <= 1) return undefined;
+  return parts.slice(0, -1).join('/');
+}
+
+function getCategoryFeaturedImage(product) {
+  const image = Array.isArray(product.media_gallery)
+    ? product.media_gallery.find(item => item?.url && !item.disabled)
+    : product.image;
+
+  if (!image?.url) return undefined;
+
+  return compactApiObject({
+    url: image.url,
+    label: image.label || product.name,
+    source_product: product.name,
+    source_product_slug: getProductSlug(product),
+  });
 }
 
 function getCatalogueStats(origin) {
@@ -1156,6 +1317,7 @@ Authentication: none. The API is public and does not require authentication.
 - Source repository: ${SOURCE_REPOSITORY_URL}
 - Products index: ${origin}/api/products
 - Categories index: ${origin}/api/categories
+- Category detail: ${origin}/api/categories/adjustable-beds
 - Search: ${origin}/api/search?q=ottoman
 - Content pages and blog posts: ${origin}/api/content-pages
 
@@ -1168,7 +1330,9 @@ Authentication: none. The API is public and does not require authentication.
 - GET or POST /api/products/{slug}/price
   Calculates configured product price from selected custom option value IDs. GET supports ?values=134102,134103. POST supports JSON selected_options.
 - GET /api/categories
-  Returns category index with product counts and sample product API URLs.
+  Returns lightweight category index with product counts and category API URLs.
+- GET /api/categories/{slug}
+  Returns full category information by slug, including canonical URL, API URL, breadcrumbs, parent category, child categories, product count, paginated product summaries, SEO hints, featured image, and last updated date.
 - GET /api/search?q=
   Searches products, CMS pages and blog posts. Supports natural-language product intent such as size and price. Query params: q, limit.
 - GET /api/content-pages
@@ -1220,6 +1384,7 @@ ${contentLines}
 function formatApiSitemap(origin) {
   const products = getProductSummaries(origin);
   const contentPages = getContentPageSummaries(origin);
+  const categories = getCategoryIndex(origin).categories;
   const urls = [
     `${origin}/api/products`,
     `${origin}/api/categories`,
@@ -1227,6 +1392,7 @@ function formatApiSitemap(origin) {
     `${origin}/llms.txt`,
     `${origin}/openapi.json`,
     `${origin}/docs`,
+    ...categories.map(category => category.api_url),
     ...products.map(product => product.api_url),
     ...contentPages.map(page => page.api_url),
   ];
@@ -1245,6 +1411,7 @@ function formatDocsHtml(origin) {
     ['Product detail by SKU example', `${origin}/api/products/Giovani-Bed`],
     ['Configured price', `${origin}/api/products/60cm-ottoman-bed/price?values=134102`],
     ['Categories', `${origin}/api/categories`],
+    ['Category detail', `${origin}/api/categories/adjustable-beds`],
     ['Search', `${origin}/api/search?q=ottoman&limit=5`],
     ['Natural-language search', `${origin}/api/search?q=king+size+ottoman+beds+under+500`],
     ['Content pages', `${origin}/api/content-pages`],
@@ -1306,6 +1473,7 @@ GET /api/products/{slug}
 GET /api/products/{slug}/price?values=134102,134103
 POST /api/products/{slug}/price
 GET /api/categories
+GET /api/categories/{slug}
 GET /api/search?q=ottoman
 GET /api/search?q=king+size+ottoman+beds+under+500
 GET /api/content-pages
@@ -1504,7 +1672,7 @@ function formatOpenApiSpec(origin) {
         get: {
           summary: 'List product categories',
           responses: {
-            200: jsonResponse('#/components/schemas/CategoryIndex', 'Category index with product counts and sample product API URLs', {
+            200: jsonResponse('#/components/schemas/CategoryIndex', 'Lightweight category index with product counts and category API URLs', {
               message: 'Categories index',
               total: 99,
               categories: [{
@@ -1512,11 +1680,42 @@ function formatOpenApiSpec(origin) {
                 name: 'Adjustable Beds',
                 slug: 'adjustable-beds',
                 url: 'https://www.sosoftbeds.co.uk/adjustable-beds',
+                canonical_url: 'https://www.sosoftbeds.co.uk/adjustable-beds',
+                api_url: `${origin}/api/categories/adjustable-beds`,
                 level: 2,
                 product_count: 42,
-                products: [productSummaryExample],
               }],
             }),
+          },
+        },
+      },
+      '/api/categories/{slug}': {
+        get: {
+          summary: 'Get enriched category data by slug',
+          parameters: [
+            { name: 'slug', in: 'path', required: true, schema: { type: 'string' } },
+            { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1 } },
+            { name: 'pageSize', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } },
+          ],
+          responses: {
+            200: jsonResponse('#/components/schemas/CategoryDetail', 'Category detail with metadata, relationships, and paginated products', {
+              message: 'Category detail',
+              id: 66,
+              name: 'Adjustable Beds',
+              slug: 'adjustable-beds',
+              url: 'https://www.sosoftbeds.co.uk/adjustable-beds',
+              canonical_url: 'https://www.sosoftbeds.co.uk/adjustable-beds',
+              api_url: `${origin}/api/categories/adjustable-beds`,
+              product_count: 5,
+              page: 1,
+              page_size: 50,
+              total_pages: 1,
+              products: [productSummaryExample],
+              last_updated: '2026-06-27',
+              seo: { title: 'Adjustable Beds | Sosoft Beds', meta_description: 'Browse 5 Adjustable Beds products from Sosoft Beds.' },
+              featured_image: { url: 'https://www.sosoftbeds.co.uk/media/catalog/product/example.jpg', label: 'Adjustable Beds', source_product: '60cm Ottoman Bed' },
+            }),
+            404: errorResponse('Category not found', { error: 'Category not found', slug: 'missing-category' }),
           },
         },
       },
@@ -1762,14 +1961,73 @@ function formatOpenApiSpec(origin) {
           type: 'object',
           properties: {
             id: { type: 'integer' },
+            uid: { type: 'string' },
             name: { type: 'string' },
             slug: { type: 'string' },
             url: { type: 'string', format: 'uri' },
+            canonical_url: { type: 'string', format: 'uri' },
+            api_url: { type: 'string', format: 'uri' },
             level: { type: 'integer' },
+            parent_category: { $ref: '#/components/schemas/CategoryReference' },
             product_count: { type: 'integer' },
-            products: { type: 'array', items: { $ref: '#/components/schemas/ProductSummary' } },
+            last_updated: { type: 'string' },
           },
-          required: ['name', 'product_count', 'products'],
+          required: ['name', 'slug', 'api_url', 'product_count'],
+        },
+        CategoryDetail: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+            id: { type: 'integer' },
+            uid: { type: 'string' },
+            name: { type: 'string' },
+            slug: { type: 'string' },
+            url: { type: 'string', format: 'uri' },
+            canonical_url: { type: 'string', format: 'uri' },
+            api_url: { type: 'string', format: 'uri' },
+            level: { type: 'integer' },
+            breadcrumbs: { type: 'array', items: { $ref: '#/components/schemas/CategoryReference' } },
+            parent_category: { $ref: '#/components/schemas/CategoryReference' },
+            child_categories: { type: 'array', items: { $ref: '#/components/schemas/CategoryReference' } },
+            product_count: { type: 'integer' },
+            page: { type: 'integer' },
+            page_size: { type: 'integer' },
+            total_pages: { type: 'integer' },
+            next_page: { type: 'string', format: 'uri' },
+            previous_page: { type: 'string', format: 'uri' },
+            products: { type: 'array', items: { $ref: '#/components/schemas/ProductSummary' } },
+            last_updated: { type: 'string' },
+            seo: { $ref: '#/components/schemas/SeoMetadata' },
+            featured_image: { $ref: '#/components/schemas/FeaturedImage' },
+          },
+          required: ['message', 'name', 'slug', 'api_url', 'product_count', 'page', 'page_size', 'total_pages', 'products'],
+        },
+        CategoryReference: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            slug: { type: 'string' },
+            url: { type: 'string', format: 'uri' },
+            api_url: { type: 'string', format: 'uri' },
+            product_count: { type: 'integer' },
+          },
+        },
+        SeoMetadata: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            meta_description: { type: 'string' },
+          },
+        },
+        FeaturedImage: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', format: 'uri' },
+            label: { type: 'string' },
+            source_product: { type: 'string' },
+            source_product_slug: { type: 'string' },
+          },
         },
         SearchResponse: {
           type: 'object',

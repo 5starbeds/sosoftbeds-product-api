@@ -34,6 +34,7 @@ GET /api/products
 GET /api/products/{slug}
 GET /api/products/{slug}/price?values={optionValueIds}
 GET /api/categories
+GET /api/categories/{slug}
 GET /api/search?q={query}
 GET /api/content-pages
 GET /api/content-pages/{slug}
@@ -47,6 +48,7 @@ curl "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed"
 curl "https://api.sosoftbeds.co.uk/api/search?q=king+size+ottoman+beds+under+500"
 curl "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed/price?values=134102"
 curl "https://api.sosoftbeds.co.uk/api/categories"
+curl "https://api.sosoftbeds.co.uk/api/categories/adjustable-beds"
 curl "https://api.sosoftbeds.co.uk/api/content-pages/choose-your-adjustable-bed"
 ```
 

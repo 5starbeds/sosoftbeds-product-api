@@ -393,7 +393,7 @@
         "summary": "List product categories",
         "responses": {
           "200": {
-            "description": "Category index with product counts and sample product API URLs",
+            "description": "Lightweight category index with product counts and category API URLs",
             "content": {
               "application/json": {
                 "schema": {
@@ -408,43 +408,128 @@
                       "name": "Adjustable Beds",
                       "slug": "adjustable-beds",
                       "url": "https://www.sosoftbeds.co.uk/adjustable-beds",
+                      "canonical_url": "https://www.sosoftbeds.co.uk/adjustable-beds",
+                      "api_url": "https://api.sosoftbeds.co.uk/api/categories/adjustable-beds",
                       "level": 2,
-                      "product_count": 42,
-                      "products": [
-                        {
-                          "sku": "60cm-ottoman-bed",
-                          "slug": "60cm-ottoman-bed",
-                          "name": "60cm Ottoman Bed",
-                          "brand": "Sosoft Beds",
-                          "price": 299,
-                          "currency": "GBP",
-                          "availability": "IN_STOCK",
-                          "canonical_url": "https://www.sosoftbeds.co.uk/60cm-ottoman-bed",
-                          "api_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
-                          "markdown_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
-                          "categories": [
-                            "Adjustable Beds"
-                          ],
-                          "image_count": 8,
-                          "option_group_count": 29,
-                          "tab_count": 7,
-                          "tab_names": [
-                            "Description",
-                            "More Information",
-                            "Dimensions",
-                            "Assembly Instructions",
-                            "Specification",
-                            "FAQ"
-                          ],
-                          "related_product_count": 12,
-                          "sort_group": {
-                            "rank": 10,
-                            "name": "bed_products"
-                          }
-                        }
-                      ]
+                      "product_count": 42
                     }
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/categories/{slug}": {
+      "get": {
+        "summary": "Get enriched category data by slug",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category detail with metadata, relationships, and paginated products",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryDetail"
+                },
+                "example": {
+                  "message": "Category detail",
+                  "id": 66,
+                  "name": "Adjustable Beds",
+                  "slug": "adjustable-beds",
+                  "url": "https://www.sosoftbeds.co.uk/adjustable-beds",
+                  "canonical_url": "https://www.sosoftbeds.co.uk/adjustable-beds",
+                  "api_url": "https://api.sosoftbeds.co.uk/api/categories/adjustable-beds",
+                  "product_count": 5,
+                  "page": 1,
+                  "page_size": 50,
+                  "total_pages": 1,
+                  "products": [
+                    {
+                      "sku": "60cm-ottoman-bed",
+                      "slug": "60cm-ottoman-bed",
+                      "name": "60cm Ottoman Bed",
+                      "brand": "Sosoft Beds",
+                      "price": 299,
+                      "currency": "GBP",
+                      "availability": "IN_STOCK",
+                      "canonical_url": "https://www.sosoftbeds.co.uk/60cm-ottoman-bed",
+                      "api_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
+                      "markdown_url": "https://api.sosoftbeds.co.uk/api/products/60cm-ottoman-bed",
+                      "categories": [
+                        "Adjustable Beds"
+                      ],
+                      "image_count": 8,
+                      "option_group_count": 29,
+                      "tab_count": 7,
+                      "tab_names": [
+                        "Description",
+                        "More Information",
+                        "Dimensions",
+                        "Assembly Instructions",
+                        "Specification",
+                        "FAQ"
+                      ],
+                      "related_product_count": 12,
+                      "sort_group": {
+                        "rank": 10,
+                        "name": "bed_products"
+                      }
+                    }
+                  ],
+                  "last_updated": "2026-06-27",
+                  "seo": {
+                    "title": "Adjustable Beds | Sosoft Beds",
+                    "meta_description": "Browse 5 Adjustable Beds products from Sosoft Beds."
+                  },
+                  "featured_image": {
+                    "url": "https://www.sosoftbeds.co.uk/media/catalog/product/example.jpg",
+                    "label": "Adjustable Beds",
+                    "source_product": "60cm Ottoman Bed"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Category not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Category not found",
+                  "slug": "missing-category"
                 }
               }
             }
@@ -1174,6 +1259,9 @@
           "id": {
             "type": "integer"
           },
+          "uid": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
           },
@@ -1184,24 +1272,183 @@
             "type": "string",
             "format": "uri"
           },
+          "canonical_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "api_url": {
+            "type": "string",
+            "format": "uri"
+          },
           "level": {
             "type": "integer"
           },
+          "parent_category": {
+            "$ref": "#/components/schemas/CategoryReference"
+          },
           "product_count": {
             "type": "integer"
+          },
+          "last_updated": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "api_url",
+          "product_count"
+        ]
+      },
+      "CategoryDetail": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "canonical_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "api_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "breadcrumbs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryReference"
+            }
+          },
+          "parent_category": {
+            "$ref": "#/components/schemas/CategoryReference"
+          },
+          "child_categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CategoryReference"
+            }
+          },
+          "product_count": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "total_pages": {
+            "type": "integer"
+          },
+          "next_page": {
+            "type": "string",
+            "format": "uri"
+          },
+          "previous_page": {
+            "type": "string",
+            "format": "uri"
           },
           "products": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ProductSummary"
             }
+          },
+          "last_updated": {
+            "type": "string"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/SeoMetadata"
+          },
+          "featured_image": {
+            "$ref": "#/components/schemas/FeaturedImage"
           }
         },
         "required": [
+          "message",
           "name",
+          "slug",
+          "api_url",
           "product_count",
+          "page",
+          "page_size",
+          "total_pages",
           "products"
         ]
+      },
+      "CategoryReference": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "api_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "product_count": {
+            "type": "integer"
+          }
+        }
+      },
+      "SeoMetadata": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "meta_description": {
+            "type": "string"
+          }
+        }
+      },
+      "FeaturedImage": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "label": {
+            "type": "string"
+          },
+          "source_product": {
+            "type": "string"
+          },
+          "source_product_slug": {
+            "type": "string"
+          }
+        }
       },
       "SearchResponse": {
         "type": "object",

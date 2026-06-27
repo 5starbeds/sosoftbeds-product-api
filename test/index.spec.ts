@@ -178,6 +178,63 @@ describe("Sosoft Beds Product API", () => {
 		expect(body.products).toHaveLength(2);
 	});
 
+	it("returns a lightweight category index", async () => {
+		const response = await fetchWorker("/api/categories");
+		const body = await response.json() as {
+			total: number;
+			categories: Array<{
+				name: string;
+				slug: string;
+				api_url: string;
+				product_count: number;
+				products?: unknown[];
+			}>;
+		};
+
+		expect(response.status).toBe(200);
+		expect(body.total).toBeGreaterThan(40);
+		expect(body.categories[0].name).toBeTruthy();
+		expect(body.categories[0].slug).toBeTruthy();
+		expect(body.categories[0].api_url).toMatch(/^https:\/\/api\.sosoftbeds\.co\.uk\/api\/categories\//);
+		expect(body.categories[0].product_count).toBeGreaterThan(0);
+		expect(body.categories[0]).not.toHaveProperty("products");
+	});
+
+	it("returns rich category detail with paginated products", async () => {
+		const response = await fetchWorker("/api/categories/adjustable-beds?page=1&pageSize=2");
+		const body = await response.json() as {
+			message: string;
+			name: string;
+			slug: string;
+			canonical_url: string;
+			api_url: string;
+			product_count: number;
+			page: number;
+			page_size: number;
+			total_pages: number;
+			products: Array<{ name: string; api_url: string }>;
+			last_updated: string;
+			seo: { title: string; meta_description: string };
+			featured_image?: { url: string };
+		};
+
+		expect(response.status).toBe(200);
+		expect(body.message).toBe("Category detail");
+		expect(body.name).toBe("Adjustable Beds");
+		expect(body.slug).toBe("adjustable-beds");
+		expect(body.canonical_url).toBe("https://www.sosoftbeds.co.uk/adjustable-beds");
+		expect(body.api_url).toBe("https://api.sosoftbeds.co.uk/api/categories/adjustable-beds");
+		expect(body.product_count).toBeGreaterThan(0);
+		expect(body.page).toBe(1);
+		expect(body.page_size).toBe(2);
+		expect(body.total_pages).toBeGreaterThanOrEqual(1);
+		expect(body.products).toHaveLength(2);
+		expect(body.products[0].api_url).toMatch(/^https:\/\/api\.sosoftbeds\.co\.uk\/api\/products\//);
+		expect(body.last_updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+		expect(body.seo.title).toBe("Adjustable Beds | Sosoft Beds");
+		expect(body.seo.meta_description).toContain("Adjustable Beds");
+	});
+
 	it("returns a product detail response", async () => {
 		const response = await fetchWorker("/api/products/60cm-ottoman-bed");
 		const body = await response.json() as {
