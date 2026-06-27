@@ -24,6 +24,54 @@ const OPTION_VALUE_KEYS = [
   'date_value',
 ];
 
+const KEYWORD_STOP_WORDS = new Set([
+  'and',
+  'are',
+  'for',
+  'from',
+  'optional',
+  'or',
+  'sosoft',
+  'sosoftbeds',
+  'the',
+  'to',
+  'with',
+]);
+
+const ANALYTICS_DISCOVERY_PATHS = new Set([
+  '/',
+  '/robots.txt',
+  '/llms.txt',
+  '/openapi.json',
+  '/docs',
+  '/sitemap.xml',
+  '/products-sitemap.xml',
+  '/.well-known/ai-plugin.json',
+  '/api/products',
+  '/api/categories',
+  '/api/search',
+  '/api/content-pages',
+]);
+
+const CRAWLER_USER_AGENT_PATTERNS = [
+  { name: 'Google-InspectionTool', pattern: /google-inspectiontool/i },
+  { name: 'Googlebot', pattern: /googlebot/i },
+  { name: 'Bingbot', pattern: /bingbot/i },
+  { name: 'ClaudeBot', pattern: /claudebot|claude-user|anthropic-ai/i },
+  { name: 'GPTBot', pattern: /gptbot|chatgpt-user|oai-searchbot/i },
+  { name: 'Amazonbot', pattern: /amazonbot/i },
+  { name: 'Applebot', pattern: /applebot/i },
+  { name: 'Bytespider', pattern: /bytespider/i },
+  { name: 'DuckAssistBot', pattern: /duckassistbot|duckduckbot/i },
+  { name: 'PerplexityBot', pattern: /perplexitybot/i },
+  { name: 'CCBot', pattern: /ccbot/i },
+  { name: 'FacebookExternalHit', pattern: /facebookexternalhit/i },
+  { name: 'LinkedInBot', pattern: /linkedinbot/i },
+  { name: 'Twitterbot', pattern: /twitterbot/i },
+  { name: 'SEO crawler', pattern: /semrush|ahrefs|mj12bot|dotbot/i },
+  { name: 'Other crawler', pattern: /bot|crawler|spider|slurp/i },
+];
+
 const SELECT_OPTION_VALUE_FIELDS = `
   uid
   title
@@ -64,11 +112,32 @@ const INPUT_OPTION_VALUE_FIELDS = `
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const startedAt = Date.now();
+
+    try {
+      const response = await handleApiRequest(request, env, url);
+      logApiRequest(request, url, response, startedAt);
+      return response;
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: 'api_request_error',
+        path: url.pathname,
+        method: request.method,
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      }));
+
+      const response = jsonResponse({ error: 'Internal server error' }, 500);
+      logApiRequest(request, url, response, startedAt, { unhandled_error: true });
+      return response;
+    }
+  },
+};
+
+async function handleApiRequest(request, env, url) {
     const pathname = url.pathname;
     const acceptHeader = request.headers.get('accept') || '';
     const origin = CANONICAL_API_ORIGIN;
-
-    logCrawlerDiscoveryHit(request, url);
 
     if (pathname === `/${GOOGLE_SITE_VERIFICATION_FILENAME}`) {
       return textResponse(GOOGLE_SITE_VERIFICATION_CONTENT, 'text/html; charset=utf-8');
@@ -248,8 +317,7 @@ export default {
     }
 
     return jsonResponse({ error: 'Not found' }, 404);
-  },
-};
+}
 
 function getLatestCacheDate(items) {
   const timestamps = items
@@ -260,38 +328,48 @@ function getLatestCacheDate(items) {
   return timestamps[0]?.slice(0, 10) || '2026-06-27';
 }
 
-function logCrawlerDiscoveryHit(request, url) {
+function logApiRequest(request, url, response, startedAt, extra = {}) {
   const userAgent = request.headers.get('user-agent') || '';
   const path = url.pathname;
-  const discoveryPaths = new Set([
-    '/',
-    '/robots.txt',
-    '/llms.txt',
-    '/openapi.json',
-    '/docs',
-    '/sitemap.xml',
-    '/products-sitemap.xml',
-    '/.well-known/ai-plugin.json',
-    '/api/products',
-    '/api/categories',
-    '/api/search',
-    '/api/content-pages',
-  ]);
-  const likelyCrawler = /(bot|crawler|spider|slurp|gptbot|chatgpt|claudebot|anthropic|perplexity|google-extended|ccbot|bytespider|facebookexternalhit|twitterbot|linkedinbot|semrush|ahrefs|mj12bot|dotbot)/i.test(userAgent);
+  const crawlerName = identifyCrawler(userAgent);
+  const likelyCrawler = Boolean(crawlerName || request.cf?.verifiedBotCategory);
 
-  if (!discoveryPaths.has(path) && !likelyCrawler) return;
+  if (!shouldLogApiAnalytics(path, likelyCrawler)) return;
 
-  console.log('crawler_discovery_hit', JSON.stringify({
+  console.log(JSON.stringify({
+    event: 'api_request',
+    endpoint: normalizeAnalyticsEndpoint(path),
     path,
     search: url.search || undefined,
     method: request.method,
+    status: response.status,
+    duration_ms: Date.now() - startedAt,
+    content_type: response.headers.get('content-type')?.split(';')[0] || undefined,
     user_agent: userAgent.slice(0, 300),
+    crawler: crawlerName || undefined,
     likely_crawler: likelyCrawler,
     verified_bot_category: request.cf?.verifiedBotCategory || undefined,
     country: request.cf?.country || undefined,
-    colo: request.cf?.colo || undefined,
+    cache_control: response.headers.get('cache-control') || undefined,
     timestamp: new Date().toISOString(),
+    ...extra,
   }));
+}
+
+function shouldLogApiAnalytics(path, likelyCrawler) {
+  return likelyCrawler || ANALYTICS_DISCOVERY_PATHS.has(path) || path.startsWith('/api/');
+}
+
+function identifyCrawler(userAgent) {
+  return CRAWLER_USER_AGENT_PATTERNS.find(({ pattern }) => pattern.test(userAgent))?.name;
+}
+
+function normalizeAnalyticsEndpoint(path) {
+  if (/^\/api\/products\/[^/]+\/price$/.test(path)) return '/api/products/{slug}/price';
+  if (/^\/api\/products\/[^/]+$/.test(path)) return '/api/products/{slug}';
+  if (/^\/api\/categories\/[^/]+$/.test(path)) return '/api/categories/{slug}';
+  if (/^\/api\/content-pages\/.+/.test(path)) return '/api/content-pages/{slug}';
+  return path;
 }
 
 function jsonResponse(data, status = 200) {
@@ -769,6 +847,8 @@ function formatProductData(product) {
   const price = product.price_range?.minimum_price?.regular_price?.value || 0;
   const salePrice = product.price_range?.minimum_price?.final_price?.value ?? product.special_price;
   const currency = product.price_range?.minimum_price?.regular_price?.currency || product.price_range?.minimum_price?.final_price?.currency || 'GBP';
+  const productType = inferProductType(product, categories);
+  const keywords = buildProductKeywords(product, categories, productType);
 
   const data = {
     id: product.id,
@@ -776,6 +856,7 @@ function formatProductData(product) {
     name: product.name,
     brand: BRAND_NAME,
     type_id: product.type_id,
+    product_type: productType,
     url_key: product.url_key,
     canonical_url: canonicalUrl,
     meta_title: product.meta_title || product.name,
@@ -797,10 +878,11 @@ function formatProductData(product) {
     image_gallery: galleryImages,
     images: galleryImages.map(image => image.url),
     related_products: normalizeRelatedProducts(product.related_products),
+    keywords,
     tabs,
     tab_names: tabs.map(tab => tab.title),
     product_url: canonicalUrl,
-    last_updated: product.cache_generated_at || new Date().toISOString(),
+    last_updated: product.cache_generated_at || PRODUCTS_DATA_UPDATED,
   };
 
   // Add custom options if available from GraphQL response
@@ -1356,9 +1438,9 @@ Authentication: none. The API is public and does not require authentication.
 - Full image gallery
 - Custom option groups and nested choices
 - Sizes, fabrics, colours, dimensions hints, delivery options
-- Related products
+- Product type, factual search keywords, related product API URLs
 - Storefront tabs including Description, More Information, Reviews, Dimensions, Assembly Instructions, Specification, FAQ where available
-- FAQs, semantic summary, best_for, pros, cons, comparison points
+- FAQs, semantic product facts, best_for, pros, cons, comparison points
 - Product JSON-LD and canonical URL
 - Last updated timestamp
 
@@ -1591,6 +1673,7 @@ function formatOpenApiSpec(origin) {
               name: '60cm Ottoman Bed',
               brand: 'Sosoft Beds',
               type_id: 'simple',
+              product_type: 'Ottoman Bed',
               url_key: '60cm-ottoman-bed',
               canonical_url: 'https://www.sosoftbeds.co.uk/60cm-ottoman-bed',
               meta_title: '60cm Ottoman Bed',
@@ -1609,11 +1692,13 @@ function formatOpenApiSpec(origin) {
               categories: [{ id: 10, name: 'Adjustable Beds', url_key: 'adjustable-beds', url_path: 'adjustable-beds', level: 2, url: 'https://www.sosoftbeds.co.uk/adjustable-beds' }],
               breadcrumbs: [{ category_id: 10, category_name: 'Adjustable Beds', category_url_key: 'adjustable-beds', category_url_path: 'adjustable-beds' }],
               custom_options: [{ title: 'Headboard', required: false, option_id: 1001, uid: 'custom-option-1001', dropdown_value: [{ title: 'Floor Standing Headboard', option_type_id: 2001, price: 99, depends_on: [], images: ['https://www.sosoftbeds.co.uk/media/options/headboard.jpg'] }] }],
+              related_products: [{ sku: 'Majestic-Plain', name: 'Majestic Art Deco Ottoman Bed', url_key: 'majestic-ottoman-bed-art-deco-headboard-with-optional-mattress', api_url: `${origin}/api/products/majestic-ottoman-bed-art-deco-headboard-with-optional-mattress`, url: 'https://www.sosoftbeds.co.uk/majestic-ottoman-bed-art-deco-headboard-with-optional-mattress', price: 425, currency: 'GBP' }],
+              keywords: ['Ottoman Bed', '60cm Ottoman Bed', '60cm ottoman bed', 'Adjustable Beds', 'ottoman bed', 'storage bed', 'fabric bed'],
               tabs: [{ title: 'Dimensions', name: 'dimensions', text: 'Width: 60cm. Length: 190cm.', html: '<p>Width: 60cm. Length: 190cm.</p>' }],
               tab_names: ['Description', 'More Information', 'Dimensions', 'Assembly Instructions', 'Specification', 'FAQ'],
               dimensions: ['Width: 60cm', 'Length: 190cm'],
               faqs: [{ question: 'Can I choose a mattress?', answer: 'Yes, compatible mattress options are available in the product options.' }],
-              semantic: { summary: 'Configurable ottoman bed product with pricing, options, dimensions, FAQs and category context.' },
+              semantic: { summary: 'Compact ottoman bed.', product_type: 'Ottoman Bed', keywords: ['Ottoman Bed', '60cm Ottoman Bed', 'ottoman bed', 'storage bed'] },
               json_ld: { '@context': 'https://schema.org', '@type': 'Product', name: '60cm Ottoman Bed', sku: '60cm-ottoman-bed' },
             }),
             404: errorResponse('Product not found', { error: 'Product not found', slug: 'missing-product' }),
@@ -1863,6 +1948,7 @@ function formatOpenApiSpec(origin) {
             name: { type: 'string' },
             brand: { type: 'string' },
             type_id: { type: 'string' },
+            product_type: { type: 'string' },
             url_key: { type: 'string' },
             canonical_url: { type: 'string', format: 'uri' },
             meta_title: { type: 'string' },
@@ -1892,6 +1978,7 @@ function formatOpenApiSpec(origin) {
             tabs: { type: 'array', items: { $ref: '#/components/schemas/ProductTab' } },
             tab_names: { type: 'array', items: { type: 'string' } },
             related_products: { type: 'array', items: { $ref: '#/components/schemas/RelatedProduct' } },
+            keywords: { type: 'array', items: { type: 'string' } },
             faqs: { type: 'array', items: { $ref: '#/components/schemas/Faq' } },
             semantic: { $ref: '#/components/schemas/SemanticProductData' },
             json_ld: { type: 'object', additionalProperties: true },
@@ -2192,6 +2279,8 @@ function formatOpenApiSpec(origin) {
             sku: { type: 'string' },
             name: { type: 'string' },
             url_key: { type: 'string' },
+            url: { type: 'string', format: 'uri' },
+            api_url: { type: 'string', format: 'uri' },
             image_url: { type: 'string', format: 'uri' },
             price: { type: 'number' },
             currency: { type: 'string' },
@@ -2212,6 +2301,7 @@ function formatOpenApiSpec(origin) {
             summary: { type: 'string' },
             primary_category: { type: 'string' },
             product_type: { type: 'string' },
+            keywords: { type: 'array', items: { type: 'string' } },
             key_features: { type: 'array', items: { type: 'string' } },
             use_cases: { type: 'array', items: { type: 'string' } },
           },
@@ -2243,7 +2333,7 @@ function formatAiPluginManifest(origin) {
     name_for_human: 'Sosoft Beds Product And Content API',
     name_for_model: 'sosoft_beds_products',
     description_for_human: 'Search and retrieve enriched Sosoft Beds product, CMS page, and blog data.',
-    description_for_model: 'Use this API to retrieve Sosoft Beds product details, categories, breadcrumbs, images, custom options, prices, related products, FAQs, semantic summaries, JSON-LD, CMS pages, guides, and blog posts.',
+    description_for_model: 'Use this API to retrieve Sosoft Beds product details, categories, breadcrumbs, images, custom options, prices, availability, product types, search keywords, related products, FAQs, semantic product facts, JSON-LD, CMS pages, guides, and blog posts.',
     auth: { type: 'none' },
     api: { type: 'openapi', url: `${origin}/openapi.json` },
     contact_email: 'info@sosoftbeds.co.uk',
@@ -2339,6 +2429,7 @@ function normalizeRelatedProducts(products) {
     name: product.name,
     url_key: product.url_key,
     url: product.url_key ? `${STORE_ORIGIN}/${product.url_key}` : undefined,
+    api_url: product.url_key ? `${CANONICAL_API_ORIGIN}/api/products/${encodeURIComponent(product.url_key)}` : undefined,
     image_url: product.image_url || product.image?.url,
     price: product.price ?? product.price_range?.minimum_price?.regular_price?.value,
     currency: product.currency || product.price_range?.minimum_price?.regular_price?.currency || 'GBP',
@@ -2445,6 +2536,122 @@ function extractDeliveryHint(product) {
   return services ? getOptionValues(services).map(value => cleanOptionText(value.title)).filter(Boolean) : [];
 }
 
+function inferProductType(product, categories = []) {
+  const categoryNames = categories.map(category => category.name || category).join(' ');
+  const primaryText = `${product.sku || ''} ${product.name || ''} ${product.url_key || ''}`.toLowerCase();
+  const text = `${primaryText} ${categoryNames}`.toLowerCase();
+
+  if (/\border\s+swatches\b/.test(categoryNames.toLowerCase()) || /\bswatch(?:es)?\b/.test(text)) return 'Fabric Swatch';
+
+  const primaryProductType = matchProductTypeText(primaryText);
+  if (primaryProductType) return primaryProductType;
+
+  if (/\b(removal|service|delivery|shipping|warranty|assembly)\b/.test(text)) return 'Service';
+
+  const categoryProductType = matchProductTypeText(text);
+  if (categoryProductType) return categoryProductType;
+
+  return titleCase(product.type_id || 'Product');
+}
+
+function matchProductTypeText(text) {
+  if (/\bmattress(?:es)?\b/.test(text)) return 'Mattress';
+  if (/\bheadboard(?:s)?\b/.test(text)) return 'Headboard';
+  if (/\badjustable\b/.test(text)) return 'Adjustable Bed';
+  if (/\belectric\b/.test(text) && /\bbed(?:s)?\b/.test(text)) return 'Electric Bed';
+  if (/\bottoman\b/.test(text)) return 'Ottoman Bed';
+  if (/\bdivan\b/.test(text)) return 'Divan Bed';
+  if (/\bsleigh\b/.test(text)) return 'Sleigh Bed';
+  if (/\bwingback\b/.test(text)) return 'Wingback Bed';
+  if (/\bbed(?:s)?\b/.test(text)) return 'Bed';
+
+  return undefined;
+}
+
+function buildProductKeywords(product, categories, productType) {
+  const keywords = [];
+  const seen = new Set();
+  const addKeyword = (value) => {
+    const keyword = cleanKeyword(value);
+    if (!keyword || seen.has(keyword.toLowerCase())) return;
+    seen.add(keyword.toLowerCase());
+    keywords.push(keyword);
+  };
+
+  addKeyword(productType);
+  addKeyword(product.name);
+  addKeyword(product.sku);
+  addKeyword(String(product.url_key || '').replace(/[-_]+/g, ' '));
+  categories.forEach(category => addKeyword(category.name));
+  addMatchedKeywordPhrases(product, categories, addKeyword);
+
+  if (Array.isArray(product.options)) {
+    product.options.forEach(option => {
+      addKeyword(option.title);
+      getOptionValues(option).slice(0, 8).forEach(value => addKeyword(cleanOptionText(value.title) || value.sku));
+    });
+  }
+
+  const additionalProperties = product.storefront_product_json_ld?.additionalProperty;
+  if (Array.isArray(additionalProperties)) {
+    additionalProperties.forEach(property => {
+      addKeyword(property.name);
+      addKeyword(property.value);
+    });
+  }
+
+  return keywords.slice(0, 60);
+}
+
+function addMatchedKeywordPhrases(product, categories, addKeyword) {
+  const categoryNames = categories.map(category => category.name || category).join(' ');
+  const text = `${product.name || ''} ${product.meta_title || ''} ${product.meta_description || ''} ${product.url_key || ''} ${categoryNames}`.toLowerCase();
+  const phrases = [
+    ['ottoman bed', /\bottoman\b/],
+    ['storage bed', /\bstorage\b/],
+    ['adjustable bed', /\badjustable\b/],
+    ['electric bed', /\belectric\b/],
+    ['wingback bed', /\bwingback\b/],
+    ['chesterfield bed', /\bchesterfield\b/],
+    ['sleigh bed', /\bsleigh\b/],
+    ['divan bed', /\bdivan\b/],
+    ['floor standing headboard', /\bfloor[-\s]?standing\b/],
+    ['headboard', /\bheadboard\b/],
+    ['mattress', /\bmattress\b/],
+    ['fabric bed', /\bfabric\b/],
+    ['king size bed', /\b(king\s*size|5ft)\b/],
+    ['super king bed', /\b(super\s*king|6ft)\b/],
+    ['double bed', /\b(double|4ft6|4ft\s*6)\b/],
+    ['single bed', /\b(single|3ft)\b/],
+  ];
+
+  phrases.forEach(([phrase, pattern]) => {
+    if (pattern.test(text)) addKeyword(phrase);
+  });
+}
+
+function cleanKeyword(value) {
+  const keyword = cleanOptionText(value)
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!keyword || keyword.length < 2 || keyword.length > 90) return '';
+  if (KEYWORD_STOP_WORDS.has(keyword.toLowerCase())) return '';
+
+  return keyword;
+}
+
+function titleCase(value) {
+  return String(value || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, character => character.toUpperCase());
+}
+
 function buildFaqs(product) {
   const tabFaqs = extractFaqsFromTab(product.faq_tab);
   if (tabFaqs.length > 0) return tabFaqs;
@@ -2493,8 +2700,10 @@ function buildSemanticFields(product) {
   if (product.sizes.some(group => group.values.some(value => /small|single/i.test(value.title || '')))) bestFor.push('small bedrooms');
   if (product.fabric_options.length) bestFor.push('custom fabric matching');
 
-  return {
-    summary: product.short_description || `${product.name} from ${BRAND_NAME}, available from ${product.currency} ${Number(product.sale_price || product.price).toFixed(2)}.`,
+  return compactApiObject({
+    summary: product.short_description,
+    product_type: product.product_type,
+    keywords: product.keywords,
     best_for: bestFor,
     pros: [
       product.images.length > 1 ? `${product.images.length} product gallery images` : 'product image available',
@@ -2513,7 +2722,7 @@ function buildSemanticFields(product) {
       `categories: ${product.categories.length}`,
       `tabs: ${product.tabs.length}`,
     ],
-  };
+  });
 }
 
 function buildProductJsonLd(product, storefrontProductJsonLd) {

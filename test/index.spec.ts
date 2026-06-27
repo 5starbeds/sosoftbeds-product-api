@@ -1,5 +1,5 @@
 import { env, createExecutionContext, waitOnExecutionContext, SELF } from "cloudflare:test";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import worker from "../src";
 
 async function fetchWorker(path: string) {
@@ -239,14 +239,69 @@ describe("Sosoft Beds Product API", () => {
 		const response = await fetchWorker("/api/products/60cm-ottoman-bed");
 		const body = await response.json() as {
 			url_key: string;
+			product_type: string;
+			keywords: string[];
+			currency: string;
+			availability: string;
+			stock_status: string;
+			last_updated: string;
 			custom_options: unknown[];
 			image_gallery: unknown[];
+			related_products: Array<{ api_url: string }>;
+			semantic: {
+				product_type: string;
+				keywords: string[];
+				summary?: string;
+			};
 		};
 
 		expect(response.status).toBe(200);
+		const lowerKeywords = body.keywords.map(keyword => keyword.toLowerCase());
+		const lowerSemanticKeywords = body.semantic.keywords.map(keyword => keyword.toLowerCase());
 		expect(body.url_key).toBe("60cm-ottoman-bed");
+		expect(body.product_type).toBe("Ottoman Bed");
+		expect(lowerKeywords).toContain("ottoman bed");
+		expect(body.currency).toBe("GBP");
+		expect(body.availability).toBe("https://schema.org/InStock");
+		expect(body.stock_status).toBe("IN_STOCK");
+		expect(body.last_updated).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+		expect(body.related_products[0].api_url).toMatch(/^https:\/\/api\.sosoftbeds\.co\.uk\/api\/products\//);
+		expect(body.semantic.product_type).toBe(body.product_type);
+		expect(lowerSemanticKeywords).toContain("ottoman bed");
 		expect(body.custom_options.length).toBeGreaterThan(0);
 		expect(body.image_gallery.length).toBeGreaterThan(0);
+	});
+
+	it("logs structured endpoint analytics without individual IP addresses", async () => {
+		const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+		try {
+			const request = new Request<unknown, IncomingRequestCfProperties>("http://example.com/api/products/60cm-ottoman-bed", {
+				headers: {
+					"user-agent": "Googlebot/2.1 (+http://www.google.com/bot.html)",
+				},
+			});
+			const ctx = createExecutionContext();
+			const response = await worker.fetch(request, env, ctx);
+			await waitOnExecutionContext(ctx);
+
+			const analyticsLine = logSpy.mock.calls
+				.map(([line]) => String(line))
+				.find((line) => line.includes('"event":"api_request"'));
+			const analytics = JSON.parse(analyticsLine || "{}");
+
+			expect(response.status).toBe(200);
+			expect(analytics.endpoint).toBe("/api/products/{slug}");
+			expect(analytics.path).toBe("/api/products/60cm-ottoman-bed");
+			expect(analytics.status).toBe(200);
+			expect(analytics.duration_ms).toBeGreaterThanOrEqual(0);
+			expect(analytics.user_agent).toContain("Googlebot");
+			expect(analytics.crawler).toBe("Googlebot");
+			expect(analytics).not.toHaveProperty("ip");
+			expect(analytics).not.toHaveProperty("client_ip");
+		} finally {
+			logSpy.mockRestore();
+		}
 	});
 
 	it("uses storefront Product JSON-LD when available", async () => {

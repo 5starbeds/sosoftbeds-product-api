@@ -16,7 +16,7 @@ LLM guide: https://api.sosoftbeds.co.uk/llms.txt
 
 - Embedded product catalogue data from Magento.
 - Product detail responses by slug or SKU.
-- Product categories, breadcrumbs, image galleries, custom options, tabs, dimensions, FAQs, and specification-style content.
+- Product categories, breadcrumbs, image galleries, custom options, tabs, dimensions, FAQs, product type, factual search keywords, availability, related product API URLs, and specification-style content.
 - Natural-language product search such as `king size ottoman beds under 500`.
 - Configured product pricing from selected custom option values.
 - CMS and blog content page data.
@@ -102,6 +102,12 @@ CLOUDFLARE_API_TOKEN
 ```
 
 The Cloudflare token should be scoped to edit Workers on the account that owns `products-api`.
+
+## Worker Analytics
+
+The Worker writes structured JSON logs for API and discovery requests. Each log entry includes the normalized endpoint, exact path, response status, response time, content type, User-Agent, crawler classification, Cloudflare verified bot category when available, and aggregated country. It does not log individual IP addresses.
+
+Use these logs in Cloudflare Workers Observability to see whether search engines and AI crawlers are discovering the API, which endpoints they request, and which individual product paths are being followed from product-page JSON alternate links.
 
 ## Deploy
 

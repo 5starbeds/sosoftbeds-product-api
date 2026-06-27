@@ -131,6 +131,7 @@
                   "name": "60cm Ottoman Bed",
                   "brand": "Sosoft Beds",
                   "type_id": "simple",
+                  "product_type": "Ottoman Bed",
                   "url_key": "60cm-ottoman-bed",
                   "canonical_url": "https://www.sosoftbeds.co.uk/60cm-ottoman-bed",
                   "meta_title": "60cm Ottoman Bed",
@@ -191,6 +192,26 @@
                       ]
                     }
                   ],
+                  "related_products": [
+                    {
+                      "sku": "Majestic-Plain",
+                      "name": "Majestic Art Deco Ottoman Bed",
+                      "url_key": "majestic-ottoman-bed-art-deco-headboard-with-optional-mattress",
+                      "api_url": "https://api.sosoftbeds.co.uk/api/products/majestic-ottoman-bed-art-deco-headboard-with-optional-mattress",
+                      "url": "https://www.sosoftbeds.co.uk/majestic-ottoman-bed-art-deco-headboard-with-optional-mattress",
+                      "price": 425,
+                      "currency": "GBP"
+                    }
+                  ],
+                  "keywords": [
+                    "Ottoman Bed",
+                    "60cm Ottoman Bed",
+                    "60cm ottoman bed",
+                    "Adjustable Beds",
+                    "ottoman bed",
+                    "storage bed",
+                    "fabric bed"
+                  ],
                   "tabs": [
                     {
                       "title": "Dimensions",
@@ -218,7 +239,14 @@
                     }
                   ],
                   "semantic": {
-                    "summary": "Configurable ottoman bed product with pricing, options, dimensions, FAQs and category context."
+                    "summary": "Compact ottoman bed.",
+                    "product_type": "Ottoman Bed",
+                    "keywords": [
+                      "Ottoman Bed",
+                      "60cm Ottoman Bed",
+                      "ottoman bed",
+                      "storage bed"
+                    ]
                   },
                   "json_ld": {
                     "@context": "https://schema.org",
@@ -913,6 +941,9 @@
           "type_id": {
             "type": "string"
           },
+          "product_type": {
+            "type": "string"
+          },
           "url_key": {
             "type": "string"
           },
@@ -1040,6 +1071,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RelatedProduct"
+            }
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           },
           "faqs": {
@@ -1911,6 +1948,14 @@
           "url_key": {
             "type": "string"
           },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "api_url": {
+            "type": "string",
+            "format": "uri"
+          },
           "image_url": {
             "type": "string",
             "format": "uri"
@@ -1950,6 +1995,12 @@
           },
           "product_type": {
             "type": "string"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "key_features": {
             "type": "array",
